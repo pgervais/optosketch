@@ -1,0 +1,7 @@
+This is the sources for Optosketch, a free editor for optical schematics with a stylus-based interface.
+
+The main window interface is designed using qt-designer (mainwindow.ui). To generate the corresponding python file, just type make (is just invokes pyuic4).
+
+Optosketch can be launched from inside the sources with 'python optosketch.py'.
+It requires Qt4 python bindings (pyside may be used in the future) and numpy.
+
