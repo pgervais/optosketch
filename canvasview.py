@@ -3,10 +3,11 @@
 from PyQt4 import QtGui, QtCore
 from stroke import StrokeItem
 from simplify import simplify_dp
-
+from point import PointItem
+from descriptors import StrokeDescriptors
 
 def display_properties(scene, item):
-  """test function. Display some line properties and do some actions for a 
+  """Test function. Display some line properties and do some actions for a 
   finished line.
   item: StrokeItem().
   """
@@ -16,6 +17,29 @@ def display_properties(scene, item):
   print "number of points: ",len(c)
  # print "coordinates: ", c
 
+  print "--- Descriptors ---"
+  descriptors = StrokeDescriptors(c)
+  print (descriptors)
+  point = descriptors.point_detector()
+  line = descriptors.straight_line_detector()
+  print point
+  print line
+
+  if point[0]:
+    sl = PointItem(QtCore.QPointF(point[1], point[2]), 
+                   color=QtGui.QColor('red'), radius = 5)
+    scene.addItem(sl)
+    scene.removeItem(item) # FIXME: remove it from CanvasScene.StrokeItem as well 
+    return 
+
+  if line[0]:
+    s = c[(0,-1),:]
+    sl = StrokeItem(color=QtGui.QColor('red'))
+    sl.fromnumpy(s)
+    scene.removeItem(item)
+    scene.addItem(sl)
+    return
+
   print "--- Simplification ---"
   threshold = 1
   d = simplify_dp(c[:,0], c[:,1])
@@ -24,8 +48,9 @@ def display_properties(scene, item):
   print "number of points: ", len(s) 
   
   # Display simplified line
-  sl = StrokeItem(color=QtGui.QColor('red'))
+  sl = StrokeItem(color=QtGui.QColor('green'))
   sl.fromnumpy(s)
+  scene.removeItem(item)
   scene.addItem(sl)
 
 
@@ -43,6 +68,7 @@ class CanvasScene(QtGui.QGraphicsScene):
     print key
     QtGui.QGraphicsScene.keyPressEvent(self, event)
     print event.key()
+    # Display last stroke coordinates as a numpy array.
     if event.key() == 80: # p ?
       print self.strokeitem[-1].tonumpy()
 
@@ -80,6 +106,10 @@ class CanvasView(QtGui.QGraphicsView):
     self.setTransformationAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
     self.setResizeAnchor(QtGui.QGraphicsView.AnchorViewCenter)
 
+    scene.addItem(PointItem(QtCore.QPointF(0.,0.), 
+                            color=QtGui.QColor('red'),
+                            radius = 5)
+                  );
  #   text = scene.addText("foo bar")
  #   text.setPos(0,0)
 

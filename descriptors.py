@@ -31,6 +31,8 @@ import numpy
 from numpy import dot, sin, cos, sqrt, cross
 from numpy.linalg import svd, solve, det
 
+from simplify import simplify_dp
+
 
 class StrokeDescriptors(object):
     """Estimator of various geometric properties. """
@@ -276,4 +278,37 @@ class StrokeDescriptors(object):
 
         return (False, None, None)
 
+
+    def straight_line_detector(self):
+        """Detects a straight line. Use ratio between length and end-to-end
+        distance, on simplified line."""
+
+        # Use of the simplified line is required to handle overall line length 
+        # instability for very small lines. However, this detector is scale
+        # dependent: small lines must be very straight to trigger this
+        # detector, long lines trigger too often. 
+        # Possible solutions : change threshold on "ratio" depending on line
+        # length, or use another ratio (e.g. aspect ratio, computed using
+        # pca results).
+
+        d = simplify_dp(self._a[:,0], self._a[:,1])
+        s = self._a[d>1.] # Simplified line
+
+        # Length of simplified line
+        # TODO: express as a single line.
+        _vectors = s[1:, :] - s[:-1, :]
+        _dx = _vectors[:, 0]
+        _dy = _vectors[:, 1]
+        _length = numpy.sqrt(_dx**2 + _dy**2).sum()
+
+        endtoend = numpy.sqrt(((s[0,:]-s[-1,:])**2).sum())
+        ratio = _length / endtoend
+        print "Straight line: %.2f %.2f / %.2f = %.2f" % \
+            (self._length, _length, endtoend, ratio)
+
+        if ratio < 1.03:
+            print "** Straight line detected **"
+            return (True,)
+        else:
+            return (False,)
 
