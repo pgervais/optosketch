@@ -27,7 +27,7 @@ import math
 from math import radians, pi
 from array import array
 
-import numpy
+import numpy as np
 from numpy import dot, sin, cos, sqrt, cross
 from numpy.linalg import svd, solve, det
 
@@ -39,7 +39,7 @@ class StrokeDescriptors(object):
     def __init__(self, a):
         self._a = a
         
-        self.atan2 = numpy.frompyfunc(math.atan2, 2, 1)
+        self.atan2 = np.frompyfunc(math.atan2, 2, 1)
 
         # Useful quantities 
         # Polyline segments, as vectors.
@@ -48,7 +48,7 @@ class StrokeDescriptors(object):
         self._dy = self._vectors[:, 1]
 
         # Polyline segment lengths, and overall length
-        self._lengths = numpy.sqrt(self._dx**2 + self._dy**2)
+        self._lengths = np.sqrt(self._dx**2 + self._dy**2)
         self._cumlength = self._lengths.cumsum()
         self._length = self._cumlength[-1]
         
@@ -115,14 +115,14 @@ class StrokeDescriptors(object):
         self._maxrotation = self._cumangles.max() - self._cumangles.min()
 
         # Detrend
-        P = numpy.polyfit(self._cumlength[1:], self._cumangles, 1)
+        P = np.polyfit(self._cumlength[1:], self._cumangles, 1)
         self._angle_rate = P[0]
         print 'polynom:', P
 
-        self._cumangles_d = self._cumangles - numpy.polyval(P, self._cumlength[1:])
+        self._cumangles_d = self._cumangles - np.polyval(P, self._cumlength[1:])
 
         # Median angle: useless without a lot of points
-#        self._angle_median = numpy.median(self._angles)
+#        self._angle_median = np.median(self._angles)
 
 
     def normalize(self):
@@ -160,7 +160,7 @@ class StrokeDescriptors(object):
         """
 
         # Center variables
-        m = dot(numpy.ones(self._a.shape), numpy.diagflat(self._center))
+        m = dot(np.ones(self._a.shape), np.diagflat(self._center))
         Xm = self._a - m
 
         U,S,V = svd(Xm, full_matrices=False);
@@ -175,8 +175,8 @@ class StrokeDescriptors(object):
 
 
     def span(self):
-        """Compute data span along principal axis.
-        a is the data, V is the first output of acpn()."""
+        """Compute line span along principal axis."""
+        # a contains coordinates, V is the first output of acpn()."""
         p = dot(self._a, self._V.transpose())
         self._span = p.max(0) - p.min(0)
 
@@ -190,7 +190,7 @@ class StrokeDescriptors(object):
 
     def midpoint(self, l, ind):
         """Return the coordinate of the point along segment
-        self._a[ind], self._a[ind+1], at a distance l from istart.
+        self._a[ind], self._a[ind+1], at a distance l from self._a[ind].
         No check is performed to ensure that the returned point is inside the
         segment (l may be greater than the segment length, or negative)"""
 
@@ -203,7 +203,7 @@ class StrokeDescriptors(object):
     def bbox_indices(self, n1, n2):
         """Compute bounding box for line between two indices.
         Order : xmin, ymin, xmax, ymax."""
-        bb = numpy.zeros(4)
+        bb = np.zeros(4)
         assert (n2+1 <= self._a.shape[0])
         bb[0:2] = self._a[n1:n2+1,:].min(0)
         bb[2:4] = self._a[n1:n2+1,:].max(0)    
@@ -249,7 +249,7 @@ class StrokeDescriptors(object):
             ends += 1
 
         n = ind[1]-ind[0]
-        c = numpy.zeros((n+ends,2))
+        c = np.zeros((n+ends,2))
         # Add first point
         c[0,:] = first
         c[1:1+n,:] = self._a[ind[0]+1:ind[1]+1,:]
@@ -299,9 +299,9 @@ class StrokeDescriptors(object):
         _vectors = s[1:, :] - s[:-1, :]
         _dx = _vectors[:, 0]
         _dy = _vectors[:, 1]
-        _length = numpy.sqrt(_dx**2 + _dy**2).sum()
+        _length = np.sqrt(_dx**2 + _dy**2).sum()
 
-        endtoend = numpy.sqrt(((s[0,:]-s[-1,:])**2).sum())
+        endtoend = np.sqrt(((s[0,:]-s[-1,:])**2).sum())
         ratio = _length / endtoend
         print "Straight line: %.2f %.2f / %.2f = %.2f" % \
             (self._length, _length, endtoend, ratio)
@@ -312,3 +312,36 @@ class StrokeDescriptors(object):
         else:
             return (False,)
 
+
+    def inflection_points(self):
+        """Detect and localize inflection points.
+        Inflection points are localized where self._angles (angles between 
+        following segments) change sign.
+        """
+
+        # Ne fonctionne pas en l'état : beaucoup trop bruité.
+        # Tracer un graphique pour étudier plus confortablement la question.
+
+        zerocrossings = np.where(self._angles[1:] * self._angles[:-1] < 0)[0]
+        # filter out points that are too close
+        tokeep = np.where(zerocrossings[1:]-zerocrossings[:-1]>2)
+        return (zerocrossings, tokeep)
+
+
+    def resample(self, num=80):
+        """Resample line."""
+
+        # Compute resampled line cumulated length
+        step = self._span.max()/num
+        resamp_cl = np.arange(0., self._cumlength[-1], step)
+
+        _cumlength = np.hstack(([-1e-4], self._cumlength))
+        ind = _cumlength.searchsorted(resamp_cl)-1
+
+        # Unitary vectors along selected segments
+        _lengths = self._lengths[ind]
+        u = self._vectors[ind]/np.vstack((_lengths, _lengths)).transpose()
+
+        _partial_lengths = (resamp_cl-_cumlength[ind])
+        return (np.vstack((_partial_lengths, _partial_lengths)).transpose() * u
+                + self._a[ind])

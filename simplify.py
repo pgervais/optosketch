@@ -77,7 +77,7 @@ def simplify_dp(x,y):
     
     return distance
 
-
+        
 if __name__ == "__main__":
     # Test
     c = np.asarray([[0,1],[0,2],[1,3]])
