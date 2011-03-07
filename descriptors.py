@@ -329,7 +329,7 @@ class StrokeDescriptors(object):
 
 
     def resample(self, num=80):
-        """Resample line."""
+        """Resample line. Wolin thesis p.64-66"""
 
         # Compute resampled line cumulated length
         step = self._span.max()/num
@@ -345,3 +345,21 @@ class StrokeDescriptors(object):
         _partial_lengths = (resamp_cl-_cumlength[ind])
         return (np.vstack((_partial_lengths, _partial_lengths)).transpose() * u
                 + self._a[ind])
+
+    def corners1(self, w=3):
+        """Bottom-up corner finding. See Wolin thesis p.67 """
+        resampled = self.resample()
+        segments = resampled[w:] - resampled[:-w]
+        straws = np.sqrt(segments[:,0]**2 + segments[:,1]**2)
+
+        threshold = np.median(straws) * 0.95
+
+        # Local minimum computation : 
+        # http://stackoverflow.com/questions/4624970/finding-local-maxima-minima-with-numpy-in-a-1d-numpy-array
+
+        ind = np.where(np.r_[True, straws[1:] < straws[:-1]] 
+                       & np.r_[straws[:-1] < straws[1:], True]
+                       & (straws < threshold))[0]
+        print straws[ind]
+        print ind
+        return np.r_[resampled[:1,:], resampled[ind+w-1,:], resampled[-1:,:]]

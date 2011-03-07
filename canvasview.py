@@ -5,8 +5,6 @@ from stroke import StrokeItem
 from simplify import simplify_dp
 from point import PointItem
 from descriptors import StrokeDescriptors
-import pylab as pl
-
 
 def display_properties(scene, item):
   """Test function. Display some line properties and do some actions for a 
@@ -25,13 +23,15 @@ def display_properties(scene, item):
   print "Angles:\n", descriptors._angles
 
   resamp = descriptors.resample()
+  corners1 = descriptors.corners1()
+  print "corners:",corners1
   print 'resampled point number: %d' % len(resamp)
 #  print "Inflection points\n", descriptors.inflection_points()
 
   if True:
     rl = StrokeItem(color=QtGui.QColor('red'))
-    rl.fromnumpy(resamp)
-    scene.removeItem(item)
+    rl.fromnumpy(corners1)
+    #scene.removeItem(item)
     scene.addItem(rl)
     return
 
