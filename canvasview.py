@@ -2,72 +2,38 @@
 
 from PyQt4 import QtGui, QtCore
 from stroke import StrokeItem
-from simplify import simplify_dp
 from point import PointItem
-from descriptors import StrokeDescriptors
+from frontend import FrontEnd
 
-def display_properties(scene, item):
-  """Test function. Display some line properties and do some actions for a 
-  finished line.
-  item: StrokeItem().
-  """
 
-  c=item.tonumpy()
-  print "--- Base line ---"
-  print "number of points: ",len(c)
- # print "coordinates: ", c
+class FrontEndCanvas(FrontEnd):
+  """Used for communication with backend. Must implement
+  methods defined in backend.FrontEnd."""
 
-  print "--- Descriptors ---"
-  descriptors = StrokeDescriptors(c)
-  print (descriptors)
-  print "Angles:\n", descriptors._angles
+  def __init__(self, scene):
+    self.scene = scene
 
-  resamp = descriptors.resample()
-  corners1 = descriptors.corners1()
-  print "corners:",corners1
-  print 'resampled point number: %d' % len(resamp)
-#  print "Inflection points\n", descriptors.inflection_points()
 
-  if True:
-    rl = StrokeItem(color=QtGui.QColor('red'))
-    rl.fromnumpy(corners1)
-    #scene.removeItem(item)
-    scene.addItem(rl)
-    return
-
-  point = descriptors.point_detector()
-  line = descriptors.straight_line_detector()
-  print point
-  print line
-
-  if point[0]:
-    sl = PointItem(QtCore.QPointF(point[1], point[2]), 
+  def add_point(self, x,y, kind=None):
+    sl = PointItem(QtCore.QPointF(x,y), 
                    color=QtGui.QColor('red'), radius = 5)
-    scene.addItem(sl)
-    scene.removeItem(item) # FIXME: remove it from CanvasScene.StrokeItem as well 
-    return 
+    self.scene.addItem(sl)
+    return sl
 
-  if line[0]:
-    s = c[(0,-1),:]
-    sl = StrokeItem(color=QtGui.QColor('red'))
-    sl.fromnumpy(s)
-    scene.removeItem(item)
-    scene.addItem(sl)
-    return
 
-  print "--- Simplification ---"
-  threshold = 1
-  d = simplify_dp(c[:,0], c[:,1])
-  s = c[d>1.]
-  print "threshold: ", threshold
-  print "number of points: ", len(s) 
+  def add_line(self, line, kind=None):
+    """Add a polyline"""
+
+    if kind == "simplified":
+      color = QtGui.QColor('red')
+    else:
+      color = QtGui.QColor('black')
+      
+    sl = StrokeItem(color=color)
+    sl.fromnumpy(line)
+    self.scene.addItem(sl)
+    return sl
   
-  # Display simplified line
-  sl = StrokeItem(color=QtGui.QColor('green'))
-  sl.fromnumpy(s)
-  scene.removeItem(item)
-  scene.addItem(sl)
-
 
 class CanvasScene(QtGui.QGraphicsScene):
   """Qt scene for stroke board. Handles lines drawing. """
@@ -77,6 +43,11 @@ class CanvasScene(QtGui.QGraphicsScene):
     self.currentitem = None # stroke being drawn
     self.strokeitem = [] # list of all strokes
 
+    # Recognition engine.
+    self.frontend = FrontEndCanvas(self)
+    self.engine = QtCore.QCoreApplication.instance().engine
+    self.engine.set_frontend(self.frontend)
+    
 
   def keyPressEvent(self, event):
     key = event.key()
@@ -103,7 +74,8 @@ class CanvasScene(QtGui.QGraphicsScene):
   def mouseReleaseEvent(self, event):
     print "Mouse release."
     if self.currentitem:
-      display_properties(self, self.currentitem)
+      self.removeItem(self.currentitem)
+      self.engine.push_stroke(self.currentitem.tonumpy())
       self.currentitem = None
 
 

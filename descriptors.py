@@ -307,8 +307,18 @@ class StrokeDescriptors(object):
             (self._length, _length, endtoend, ratio)
 
         if ratio < 1.03:
-            print "** Straight line detected **"
-            return (True,)
+            _lx, _ly = np.abs(s[0,:]-s[-1,:])
+
+            # Test if line is vertical, horizontal or diagonal
+            if abs(_lx) < 0.2*abs(_ly):
+                orientation = "vertical"
+            elif abs(_ly) < 0.2*abs(_lx):
+                orientation = "horizontal"
+            elif 0.8*abs(_ly) < abs(_lx) < 1.2*abs(_ly):
+                orientation = "diagonal"
+            else:
+                orientation = ""
+            return (True, orientation)
         else:
             return (False,)
 

@@ -3,8 +3,10 @@
 from PyQt4 import QtGui, QtCore
 import numpy as np
 import time
+from frontend import GenericLine
 
-class StrokeItem(QtGui.QGraphicsPathItem):
+
+class StrokeItem(QtGui.QGraphicsPathItem, GenericLine):
     def __init__(self, pos=QtCore.QPointF(0.,0.), 
                  color=QtGui.QColor('black'), *args):
         """pos is initial position. """

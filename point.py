@@ -2,8 +2,9 @@
 
 from PyQt4 import QtGui, QtCore
 import numpy as np
+from frontend import GenericPoint
 
-class PointItem(QtGui.QGraphicsPathItem):
+class PointItem(QtGui.QGraphicsPathItem, GenericPoint):
     """Object that represents a geometrical point.
     It is shown as a small circle on the canvas."""
     def __init__(self, pos=QtCore.QPointF(0.,0.), 
@@ -16,4 +17,5 @@ class PointItem(QtGui.QGraphicsPathItem):
         self.path.addEllipse(pos, radius, radius)
         self.setPath(self.path)
         self.setPen(QtGui.QPen(color))
-
+        # FIXME: define self.x, self.y
+        
