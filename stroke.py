@@ -44,7 +44,7 @@ class StrokeItem(QtGui.QGraphicsPathItem, GenericLine):
     def fromnumpy(self,coords):
         """Set current path with a numpy array.
         This method does an append. Use clear()
-        to remove every points before appending."""
+        to remove every point before appending."""
         self.path.moveTo(coords[0,0], coords[0,1])
         for l in coords[1:]:
             self.path.lineTo(l[0], l[1])

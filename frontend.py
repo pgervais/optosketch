@@ -26,7 +26,7 @@ class FrontEnd(object):
         return None # return GenericLine object
 
 
-    def add_baseline(self, ylocation):
+    def add_baseline(self, ylocation, span):
         """Add a baseline to the schematic.
         ylocation: vertical coordinate of baseline. A baseline is supposed
         not to have horizontal limits (it extends from leftmost visible
@@ -34,15 +34,22 @@ class FrontEnd(object):
         return None # return Baseline object
 
     
-    def add_lens(self, location, baseline, height, kind):
+    def add_lens(self, location, baseline, span, kind):
         """Add a lens to a baseline.
         location: horizontal coordinate along baseline. 
         baseline: frontend object returned by add_baseline().
-        height: half-size of lens (distance between center and one extreme
+        span: half-size of lens (distance between center and one extreme
                 point)
         kind: "diverging" or "converging" (or "negative"/"positive")
         """
-        return None # return Lens object
+        return None # return frontend lens object
+
+
+    def add_ray(self, polyline):
+        """Add a ray to a schematic
+        polyline : numpy array, describing the ray as a polyline"""
+
+        return None # return frontend ray object.
 
 
 class VisibleObject(object):
@@ -81,7 +88,6 @@ class Lens(object):
         self.xlocation = None
         self.height = None 
         
-
-
+        
 
 

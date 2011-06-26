@@ -9,13 +9,17 @@ class PointItem(QtGui.QGraphicsPathItem, GenericPoint):
     It is shown as a small circle on the canvas."""
     def __init__(self, pos=QtCore.QPointF(0.,0.), 
                  color=QtGui.QColor('black'), 
-                 radius = 3,
-                 *args):
+                 radius = 3, label=None,
+                 *args, **kwargs):
         """pos is point position. radius is circle radius."""
-        super(PointItem, self).__init__(*args)
+        super(PointItem, self).__init__(*args, **kwargs)
         self.path = QtGui.QPainterPath()
         self.path.addEllipse(pos, radius, radius)
-        self.setPath(self.path)
         self.setPen(QtGui.QPen(color))
-        # FIXME: define self.x, self.y
-        
+        self.setPath(self.path)
+
+        self.x = pos.x()
+        self.y = pos.y()
+        ## FIXME: devise a better placement algorithm.
+        if not label is None:
+            QtGui.QGraphicsSimpleTextItem(label, parent=self).moveBy(self.x, self.y+2)

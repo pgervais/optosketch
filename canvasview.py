@@ -3,12 +3,15 @@
 from PyQt4 import QtGui, QtCore
 from stroke import StrokeItem
 from point import PointItem
+from baseline import BaselineItem
+from lens import LensItem
+from ray import RayItem
 from frontend import FrontEnd
 
 
 class FrontEndCanvas(FrontEnd):
   """Used for communication with backend. Must implement
-  methods defined in backend.FrontEnd."""
+  methods defined in frontend.FrontEnd."""
 
   def __init__(self, scene):
     self.scene = scene
@@ -33,6 +36,35 @@ class FrontEndCanvas(FrontEnd):
     sl.fromnumpy(line)
     self.scene.addItem(sl)
     return sl
+
+
+  def add_baseline(self, ylocation,span):
+    """Add a baseline"""
+
+    bl = BaselineItem(ylocation, span)
+    self.scene.addItem(bl)
+    return bl
+
+
+  def add_lens(self, xlocation, baseline, span, kind=None):
+      """Add a lens to a baseline.
+      xlocation: horizontal coordinate along baseline. 
+      baseline: frontend object returned by add_baseline().
+      span: half-size of lens (distance between center and one extreme
+              point)
+      kind: "diverging" or "converging" (or "negative"/"positive") or None if the kind
+            is still undefined
+      """
+      lens = LensItem(xlocation, baseline.ylocation, span, kind)
+      self.scene.addItem(lens)
+      return lens
+
+
+  def add_ray(self, polyline):
+    """Add a ray to the canvas."""
+    ray = RayItem(polyline)
+    self.scene.addItem(ray)
+    return ray
   
 
 class CanvasScene(QtGui.QGraphicsScene):
@@ -55,8 +87,11 @@ class CanvasScene(QtGui.QGraphicsScene):
     QtGui.QGraphicsScene.keyPressEvent(self, event)
     print event.key()
     # Display last stroke coordinates as a numpy array.
-    if event.key() == 80: # p ?
-      print self.strokeitem[-1].tonumpy()
+    if event.key() == 80: # p 
+      print (self.strokeitem[-1].tonumpy())
+    
+    if event.key() == 69: # e
+      print "Existing objects: "+self.engine.content()
 
 
   def mousePressEvent(self, event):
