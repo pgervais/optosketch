@@ -23,10 +23,22 @@ class Lens(object):
         
 
 class Ray(object):
-    def __init__(self, frontend, polyline):
-        self.polyline = polyline
-        self._frontend_object = frontend.add_ray(polyline)
+    def __init__(self, frontend, backend, basepoint, unit):
+        """basepoint: point through which the ray passes.
+        unit: unitary vector along the ray, at basepoint."""
+        self.basepoint = basepoint
+        self.unit = unit
+        self.backend = backend
         
+        polyline = self.backend.ray_polyline(self.basepoint, self.unit)
+        self._frontend_object = frontend.add_ray(polyline)
+
+
+    def update(self):
+        """Update ray."""
+        polyline = self.backend.ray_polyline(self.basepoint, self.unit)        
+        self._frontend_object.update(polyline)
+
 
 class RecognitionEngine(object):
     """Main communication object between frontend and backend."""
@@ -111,12 +123,13 @@ class RecognitionEngine(object):
             xlocation = (stroke[0,0] + stroke[-1, 0])/2.
             self._lenses.append(Lens(self.frontend, xlocation,
                                      self._baseline._frontend_object))
+            # Update ray objects.
+            for ray in self._rays: ray.update()
             return
 
         if ray[0]:
             print("Adding a ray")
-            polyline = self.ray_polyline(descriptors, *ray[1:])
-            self._rays.append(Ray(self.frontend, polyline))
+            self._rays.append(Ray(self.frontend, self, *ray[1:]))
             return
             
         if line[0]:
@@ -210,7 +223,7 @@ class RecognitionEngine(object):
             return(False,)
         
     
-    def ray_polyline(self, descriptors, basepoint, unit):
+    def ray_polyline(self, basepoint, unit):
         print ("unit: ", unit)
         print ("basepoint: ", basepoint)
 
