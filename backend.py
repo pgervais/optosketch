@@ -18,8 +18,10 @@ class Lens(object):
         # kind can be "undefined" or "thin"
         self.xlocation = xlocation
         self.focal = focal
+        self.baseline = baseline
         self._frontend_object = frontend.add_lens(xlocation, baseline,
-                                                  span, kind)
+                                                  focal=focal,
+                                                  span=span, kind=kind)
         
 
 class Ray(object):
@@ -121,8 +123,13 @@ class RecognitionEngine(object):
         if lens:
             print ("Adding a lens")
             xlocation = (stroke[0,0] + stroke[-1, 0])/2.
+            if len(self._lenses) % 2 == 0:
+                sign = 1
+            else:
+                sign = -1
             self._lenses.append(Lens(self.frontend, xlocation,
-                                     self._baseline._frontend_object))
+                                     self._baseline._frontend_object,
+                                     focal=50*sign))
             # Update ray objects.
             for ray in self._rays: ray.update()
             return
@@ -345,3 +352,22 @@ class RecognitionEngine(object):
             return False
 
         
+    def set_lens_pos(self, lens, x, y):
+        """Move a lens to a new location.
+        "lens" is the frontend object.
+        x,y : new lens location (lens center)."""
+
+        # Find backend object
+        # FIXME: very unefficient. use a dict instead.
+        backend=None
+        for l in self._lenses:
+            if l._frontend_object == lens:
+                backend = l
+                break
+        if backend is None: raise ValueError("No backend object found.")
+
+        backend.xlocation = x
+        y = backend.baseline.ylocation
+        for ray in self._rays: ray.update()
+        
+        return (backend.xlocation, y)

@@ -1,6 +1,6 @@
 # This file is part of Optosketch. It is released under the GPL v2 licence.
 
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore, Qt
 from PyQt4.QtCore import QPointF
 from point import PointItem
 import numpy as np
@@ -8,39 +8,74 @@ import numpy as np
 
 class LensItem(QtGui.QGraphicsPathItem):
     def __init__(self, xlocation=0., ylocation=0., span=50.,
-                 color=QtGui.QColor('gray'), kind=None, *args):
+                 color=QtGui.QColor('gray'), kind=None,
+                 focal = 50., backend=None, *args):
 
+        print ('focal ', focal)
         super(LensItem, self).__init__(*args)
 
         self.xlocation = xlocation
         self.ylocation = ylocation
-        
+        self.backend = backend
+        self.__moving = False
+        super(LensItem, self).setPos(QPointF(xlocation, ylocation))
+
+        # Item shape
         self.path = QtGui.QPainterPath()
-        self.path.moveTo(QPointF(xlocation, -span + ylocation))
+        
+        self.path.moveTo(QPointF(0., -span))
         pen = QtGui.QPen(color)
-##         pen.setDashPattern([5,5])
+        pen.setWidth(2)
         self.setPen(pen)
-        self.path.lineTo(QPointF(xlocation, +span +ylocation))
+        self.path.lineTo(QPointF(0., +span))
 
         # Draw arrows
         # TODO: compute "head" in a helper function
         dx = 5
-        dy = 6
-        head = QtGui.QPolygonF([QPointF(xlocation-dx, -dy+span +ylocation),
-                        QPointF(xlocation, +span +ylocation),
-                        QPointF(xlocation+dx, -dy+span +ylocation)])
+        if focal > 0:
+            dy = 6
+        else:
+            dy = -6
+            
+        head = QtGui.QPolygonF([QPointF(-dx, -dy+span),
+                        QPointF(0., +span ),
+                        QPointF(dx, -dy+span)])
         self.path.addPolygon(head)
 
-        head = QtGui.QPolygonF([QPointF(xlocation-dx, dy -span +ylocation),
-                        QPointF(xlocation, -span +ylocation),
-                        QPointF(xlocation+dx, dy-span +ylocation)])
+        head = QtGui.QPolygonF([QPointF(-dx, dy -span),
+                        QPointF(0., -span),
+                        QPointF(dx, dy-span)])
         self.path.addPolygon(head)
 
         # Draw focal points as sub-objects
-        f=50 # FIXME: pass this as a parameter to __init__
-        focii = PointItem(QPointF(xlocation-f, ylocation), label='f', parent=self), \
-                PointItem(QPointF(xlocation+f, ylocation), label="f'", parent = self)
+        focii = PointItem(QPointF(-focal, 0.), label='f', parent=self), \
+                PointItem(QPointF( focal, 0.), label="f'", parent = self)
         
+        self.setAcceptHoverEvents(True)
+        self.setCursor(Qt.Qt.SizeHorCursor)
+
         self.setPath(self.path)
 
 
+
+    def mousePressEvent(self, event):
+        self.__startPos = event.pos()
+        print("mouse press (lens): ", self.__startPos.x(), self.__startPos.y())
+        self.__moving = True
+
+    def mouseReleaseEvent(self, event):
+        print("mouse release (lens)")
+        self.__moving=False
+        self.__startPos = None
+
+    def mouseMoveEvent(self, event):
+        if self.__moving :
+#            print ('mouse move to')
+            current = event.scenePos() - self.__startPos
+#            print("mouse press (lens): ", current.x(), current.y())
+            self.setPos(current.x(), self.ylocation)
+
+    def setPos(self, x, y):
+        newx, newy = x, y
+        newx, newy=self.backend.set_lens_pos(self, x, y)
+        super(LensItem, self).setPos(QPointF(newx,newy))

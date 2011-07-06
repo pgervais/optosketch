@@ -46,7 +46,7 @@ class FrontEndCanvas(FrontEnd):
     return bl
 
 
-  def add_lens(self, xlocation, baseline, span, kind=None):
+  def add_lens(self, xlocation, baseline, span, focal=50., kind=None):
       """Add a lens to a baseline.
       xlocation: horizontal coordinate along baseline. 
       baseline: frontend object returned by add_baseline().
@@ -55,7 +55,9 @@ class FrontEndCanvas(FrontEnd):
       kind: "diverging" or "converging" (or "negative"/"positive") or None if the kind
             is still undefined
       """
-      lens = LensItem(xlocation, baseline.ylocation, span, kind)
+      lens = LensItem(xlocation, baseline.ylocation,
+                      backend = self.scene.engine,
+                      focal=focal, span=span, kind=kind)
       self.scene.addItem(lens)
       return lens
 
@@ -84,34 +86,46 @@ class CanvasScene(QtGui.QGraphicsScene):
   def keyPressEvent(self, event):
     key = event.key()
     print key
-    QtGui.QGraphicsScene.keyPressEvent(self, event)
-    print event.key()
+
     # Display last stroke coordinates as a numpy array.
-    if event.key() == 80: # p 
+    if key == 80: # p 
       print (self.strokeitem[-1].tonumpy())
-    
-    if event.key() == 69: # e
+    elif key == 69: # e
       print "Existing objects: "+self.engine.content()
+    else:
+      super(CanvasScene, self).keyPressEvent(event)      
 
 
   def mousePressEvent(self, event):
-    print "Mouse press."
-    self.currentitem = StrokeItem(event.scenePos())
-    self.strokeitem.append(self.currentitem)
-    self.addItem(self.currentitem)
+    ret = super(CanvasScene, self).mousePressEvent(event)
+    print "Mouse press (scene).", ret
+    grabber = self.mouseGrabberItem()
+    if not grabber is None:
+      pass
+    else:
+      self.currentitem = StrokeItem(event.scenePos())
+      self.strokeitem.append(self.currentitem)
+      self.addItem(self.currentitem)
 
 
   def mouseMoveEvent(self, event):
-     if self.currentitem: 
-        self.currentitem.lineTo(event.scenePos())
- 
+    grabber = self.mouseGrabberItem()
+    if not grabber is None:
+      super(CanvasScene, self).mouseMoveEvent(event)
+    elif self.currentitem: 
+      self.currentitem.lineTo(event.scenePos())
+    else:
+      super(CanvasScene, self).mouseMoveEvent(event)
+
 
   def mouseReleaseEvent(self, event):
-    print "Mouse release."
+    print "Mouse release (scene)."
     if self.currentitem:
       self.removeItem(self.currentitem)
       self.engine.push_stroke(self.currentitem.tonumpy())
       self.currentitem = None
+    else:
+      super(CanvasScene, self).mouseReleaseEvent(event)
 
 
 class CanvasView(QtGui.QGraphicsView):
