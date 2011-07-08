@@ -33,13 +33,13 @@ class Ray(object):
         self.backend = backend
         
         polyline = self.backend.ray_polyline(self.basepoint, self.unit)
-        self._frontend_object = frontend.add_ray(polyline)
+        self._frontend_object = frontend.add_ray(polyline, basepoint, unit)
 
 
     def update(self):
         """Update ray."""
         polyline = self.backend.ray_polyline(self.basepoint, self.unit)        
-        self._frontend_object.update(polyline)
+        self._frontend_object.update(polyline, self.basepoint, self.unit)
 
 
 class RecognitionEngine(object):
@@ -231,8 +231,8 @@ class RecognitionEngine(object):
         
     
     def ray_polyline(self, basepoint, unit):
-        print ("unit: ", unit)
-        print ("basepoint: ", basepoint)
+##         print ("unit: ", unit)
+##         print ("basepoint: ", basepoint)
 
         # Get sorted lens locations
         lenses_x = np.array([(l.xlocation, l.focal,
@@ -371,3 +371,19 @@ class RecognitionEngine(object):
         for ray in self._rays: ray.update()
         
         return (backend.xlocation, y)
+
+
+    def set_ray_point(self, ray, x, y):
+        """Change the location of a ray base point.
+        "ray": frontend ray object.
+        x, y: new location"""
+
+        backend=None
+        for l in self._rays:
+            if l._frontend_object == ray:
+                backend = l
+                break
+        if backend is None: raise ValueError("No backend object found.")
+
+        backend.basepoint = np.asarray((x,y))
+        backend.update()

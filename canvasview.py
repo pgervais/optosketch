@@ -62,9 +62,12 @@ class FrontEndCanvas(FrontEnd):
       return lens
 
 
-  def add_ray(self, polyline):
-    """Add a ray to the canvas."""
-    ray = RayItem(polyline)
+  def add_ray(self, polyline, basepoint, unit):
+    """Add a ray to the canvas.
+    poyline: numpy array
+    basepoint: numpy array. Point through which the ray passes.
+    unit: numpy array. Unit vector along the ray at the basepoint."""
+    ray = RayItem(polyline, basepoint, unit, backend = self.scene.engine)
     self.scene.addItem(ray)
     return ray
   

@@ -11,7 +11,6 @@ class LensItem(QtGui.QGraphicsPathItem):
                  color=QtGui.QColor('gray'), kind=None,
                  focal = 50., backend=None, *args):
 
-        print ('focal ', focal)
         super(LensItem, self).__init__(*args)
 
         self.xlocation = xlocation
