@@ -5,8 +5,10 @@ of frontend. Frontend communication must be implemented in a separate file.
 
 from descriptors import StrokeDescriptors
 from simplify import simplify_dp
+import math
 import numpy as np
-    
+from numpy.linalg import svd
+
 class Baseline(object):
     def __init__(self, frontend, ylocation, span=300):
         self.ylocation = ylocation
@@ -98,14 +100,31 @@ class RecognitionEngine(object):
         ray = self.ray_detector(descriptors)
         print "Ray: "+str(ray)
 
+
+        print "--- Simplification ---"
+        threshold = 1.
+        d = simplify_dp(stroke[:,0], stroke[:,1])
+        s = stroke[d>threshold]
+        print "threshold: ", threshold
+        print "number of points: ", len(s) 
+
+        simplified_descriptors = StrokeDescriptors(s)
+        scratch = self.scratch_detector(simplified_descriptors)
+        print "Scratch: "+str(scratch)
+
         print("--- Corners detection ---")
         resamp = descriptors.resample()
         corners1 = descriptors.corners1()
-        print "corners:",corners1
-        print 'resampled point number: %d' % len(resamp)
+#        print "corners:",corners1
+#        print 'resampled point number: %d' % len(resamp)
 
         # Make recognition decision and call frontend here.
 ##         self.frontend.add_line(corners1) # Display line with detected corners.
+        if scratch[0] or True:
+            print ("Processing scratch")
+            for p in scratch[1]:
+                self.frontend.add_point(p[0], p[1])
+                
         if point[0]:
             print ("Adding point")
             self.frontend.add_point(point[1], point[2])
@@ -143,13 +162,6 @@ class RecognitionEngine(object):
             print("Adding generic line")
             self.frontend.add_line(stroke[(0,-1),:], kind="generic")
             return
-
-        print "--- Simplification ---"
-        threshold = 1
-        d = simplify_dp(stroke[:,0], stroke[:,1])
-        s = stroke[d>1.]
-        print "threshold: ", threshold
-        print "number of points: ", len(s) 
 
         # Display simplified line
         self.frontend.add_line(s, kind="simplified")
@@ -304,6 +316,76 @@ class RecognitionEngine(object):
 
         return (point, vector)
 
+
+    def scratch_detector(self, descriptors):
+        """Detect if a stroke can be a scratch.
+        Descriptors must be computed on a simplified line. Otherwise, angle
+        computations are too noisy.
+        
+        Criteria:
+        - maximum span greater than a threshold.
+        - sum of angles minus sum of absolute values of angles greater
+          than a threshold (4.5 is a good guess value, independent of scale).
+        - At least 2 inflection points.
+        - Inflection points are roughly aligned
+        """
+
+        print ("-- scratch --")
+        size = max(descriptors._span)
+        
+        # Inflection points-related quantities
+        zerocrossings = np.where(
+            descriptors._angles[1:] * descriptors._angles[:-1] < 0)[0]
+
+        weighta = np.abs(descriptors._angles[zerocrossings])
+        weightb = np.abs(descriptors._angles[zerocrossings+1])
+        
+        # Stroke lengths at inflection points
+        inflection_lengths = descriptors._cumlength[zerocrossings] + \
+             weighta/(weighta+weightb)*descriptors._lengths[zerocrossings+1]
+
+        # Compute location of inflection points
+        # See resample()
+        resampled = descriptors.resample(lengths=inflection_lengths)
+
+        if len(resampled) < 2: return (False, ())
+
+        # Compute pca on inflection points
+        m = np.dot(np.ones(resampled.shape), np.diagflat(resampled.mean(0)))
+        U,S,V = svd(resampled - m, full_matrices=False);
+
+        # Ensure main direction points towards positive value
+        if V[0,0] < 0. : V = -V
+
+        # Angle of principal axis relative to horizontal
+        inflection_angle = math.atan2(V[0,1], V[0,0])
+        # Ratio of singular values
+        svalue_ratio = S[1]/S[0]
+        print ("ratio of singular values: %.2f " % svalue_ratio)
+        print("inflection_angle: %.2f" % np.rad2deg(inflection_angle))
+
+        ## Ideas: - check alignment of inflection points
+        ## - use inflection points to get scratch orientation
+        ## - check lengths between successive inflection points. Does not work
+
+        abs_angle_sum = np.abs(descriptors._angles).sum()
+        angle_sum = abs(descriptors._angles.sum())
+
+        angle_sum_criteria = abs(angle_sum - abs_angle_sum)
+        arc_number = len(inflection_lengths)+1
+
+        print ("-- end scratch --")
+##         print (angle_sum_criteria, arc_number)
+
+        if size<17 \
+           or angle_sum_criteria < 4.5 \
+           or arc_number < 3 \
+           or svalue_ratio > 0.3:
+            return (False, resampled)
+        
+        print ("** scratch detected **")
+        return (True, resampled)
+    
         
     def baseline_detector(self, descriptors, span=270):
         """Detect if a stroke can be a base line.

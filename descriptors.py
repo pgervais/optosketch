@@ -323,27 +323,16 @@ class StrokeDescriptors(object):
             return (False,)
 
 
-    def inflection_points(self):
-        """Detect and localize inflection points.
-        Inflection points are localized where self._angles (angles between 
-        following segments) change sign.
-        """
-
-        # Ne fonctionne pas en l'état : beaucoup trop bruité.
-        # Tracer un graphique pour étudier plus confortablement la question.
-
-        zerocrossings = np.where(self._angles[1:] * self._angles[:-1] < 0)[0]
-        # filter out points that are too close
-        tokeep = np.where(zerocrossings[1:]-zerocrossings[:-1]>2)
-        return (zerocrossings, tokeep)
-
-
-    def resample(self, num=80):
+    def resample(self, num=80, lengths=None):
         """Resample line. Wolin thesis p.64-66"""
+        ## TODO: Pass resamp_cl as a parameter.
 
         # Compute resampled line cumulated length
-        step = self._span.max()/num
-        resamp_cl = np.arange(0., self._cumlength[-1], step)
+        if not lengths is None:
+            resamp_cl = lengths
+        else:
+            step = self._span.max()/num
+            resamp_cl = np.arange(0., self._cumlength[-1], step)
 
         _cumlength = np.hstack(([-1e-4], self._cumlength))
         ind = _cumlength.searchsorted(resamp_cl)-1
@@ -355,6 +344,7 @@ class StrokeDescriptors(object):
         _partial_lengths = (resamp_cl-_cumlength[ind])
         return (np.vstack((_partial_lengths, _partial_lengths)).transpose() * u
                 + self._a[ind])
+
 
     def corners1(self, w=3):
         """Bottom-up corner finding. See Wolin thesis p.67 """
