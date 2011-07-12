@@ -1,0 +1,31 @@
+Optosketch tasks to do
+======================
+Have a look at the BSP Tree algorithm for deciding between inside or
+outside strokes.
+
+Building and testing base objects (Qt frontend and backend):
+    - adding baseline
+    - adding lens, a vertical ligne and 2 corners
+    - adding rays
+        * distance calculation from a point to a stroke
+        * context definition
+An implementation has already been done by Philippe but it
+needs to be tested by every developper :)
+
+Documentation between frontend and backend needs to be written.
+There should be an update problem, see GenericLine for the starting
+point.
+
+A record and undo/redo system needs to be defined. What will be the data
+structures for storing the sketch? A starting point could be sqlite
+but the problem is the platform portability (like big/little endian)
+for array recording.  Another idea could be hdf5 (or netcdf) but it
+seems to be a huge dependency for Optosketch requirements. Are there
+light alternatives to HDF5?
+
+QtDesigner should be removed, the optosketch Python module should
+be defined and logging should be used for debugging (too noisy
+tracebacks from now).
+
+libstroke and cellwriter should be investigated for writting for example
+focal len names.
