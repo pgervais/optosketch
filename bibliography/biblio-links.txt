@@ -1,0 +1,187 @@
+#Sketch
+Off-line Sketch Interpretation
+http://groups.csail.mit.edu/uid/projects/udsi/aaai04.pdf
+
+Sketch interpretation for conceptual design and analysis
+http://creativemachines.cornell.edu/papers/AIEDAM00_Lipson.pdf
+
+SketchREAD: A Multi-Domain Sketch Recognition Engine
+http://portal.acm.org/ft_gateway.cfm?id=1029637&type=pdf
+
+Freehand Sketch Interpreter System for Constructing 3D Solid Models
+http://www.interaction-ipsj.org/archives/paper2005/pdf2005/interactive/B201.pdf
+
+A freehand sketching interface for progressive construction of 3D
+http://creativemachines.cornell.edu/papers/CG05_Masry.pdf
+
+Hidden Markov Model Symbol Recognition for Sketch-Based Interfaces
+http://www.aaai.org/Papers/Symposia/Fall/2004/FS-04-06/FS04-06-003.pdf
+
+Incremental Learning of Perceptual Categories for Open-Domain Sketch Recognition
+http://www.cs.northwestern.edu/~aml758/Papers/IJCAI07-Final.pdf
+
+Capture d'inscriptions pour la réalite augmentée
+http://iihm.imag.fr/publs/1999/IHM99_BoardCleanup.Fr.pdf
+
+Revisiting ShortStraw * Improving Corner Finding in Sketch-Based Interfaces
+http://www.eecs.ucf.edu/~jjl/pubs/final_paper.pdf
+
+Classification of Sketch Strokes and. Corner Detection using Conic Sections and Adaptive Clustering
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.21.6153&rep=rep1&type=pdf
+
+LADDER, a sketching language for user interface developers
+http://rationale.csail.mit.edu/publications/Hammond2005Ladder.pdf
+
+User-Directed Sketch Interpretation
+http://groups.csail.mit.edu/uid/projects/udsi/noto-thesis.pdf
+
+Envisioning Sketch Recognition: A Local Feature Based Approach to Recognizing Informal Sketches
+http://rationale.csail.mit.edu/publications/Oltmans2007Envisioning.pdf
+
+PaleoSketch: Accurate Primitive Sketch Recognition and Beautification
+http://srlweb.cs.tamu.edu/srlng/research/paper/8
+
+Quill reference manual
+http://quill.sourceforge.net/reference.html
+
+Strategy for Line Drawing Understanding
+http://www.springerlina.com/index/y0xpqua4agajxv0h.pdf
+
+Experimental Evaluation of an on-line Scribble Recognizer
+http://vimmi.inesc-id.pt/cali/papers/recpad2k.pdf
+
+Ink Features for Diagram Recognition
+http://www.cs.auckland.ac.nz/~beryl/publications/SBIM%202007%20Ink%20Features%20for%20Diagram%20Recognition.pdf
+
+Moment in Online Handwritten Character Recognition
+http://www.rimtengg.com/coit2007/proceedings/pdfs/46.pdf
+
+Sketchboard: the simple 3d modeling from architectural sketch recognition
+http://sketchboard.sourceforge.net/docs/SketchBoard_Pojchara.pdf
+
+Sketchpad: A man-machine graphical communication system
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.128.1120&rep=rep1&type=pdf
+
+Recognition of On-Line Handwritten Commutative Diagrams
+http://www.cvc.uab.es/icdar2009/papers/3725b211.pdf
+
+Segmenting Hand-Drawn Strokes
+http://srlweb.cse.tamu.edu/srlng/research/paper/103?from=/srlng/research/
+
+Line simplification algorithms
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.136.7777&rep=rep1&type=pdf
+
+#Image analysis
+Image denoising: a nonlinear robust statistical approach
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.24.5655&rep=rep1&type=pdf
+
+Multiscale Statistical Image Invariants
+http://visual.nlm.nih.gov/~yoo/pubs/iccv99.pdf
+
+Flat Zones Filtering Connected Operators And Filters By Reconstruction
+http://gps-tsc.upc.es/imatge/pub/ps/IEEE_IP95_Salembier_Serra.pdf
+
+Distinctive Image Features from Scale-Invariant Keypoints
+http://www.cs.ubc.ca/~lowe/papers/ijcv04.pdf
+
+Appariement d'images par invariants locaux de niveaux de gris
+http://lear.inrialpes.fr/~schmid/publi/these_schmid_96.pdf
+
+Salt-and-Pepper noise removal by median-type noise detectors and detail preserving regularization
+http://www.math.cuhk.edu.hk/~rchan/paper/impulse/impulse.pdf
+
+A Polygon Detection Algorithm for Robot Visual Servoing
+http://www.springerlink.com/index/3040v67185164482.pdf
+
+3d projective reconstruction with decomposed projective depths
+http://med.ee.nd.edu/MED11/pdf/papers/t7-066.pdf
+
+#Constraints
+Decomposition Plans for Geometric Constraint Problems, Part II: New Algorithms
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.85.4943&rep=rep1&type=pdf
+
+Programming Constraint Services
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.91.3166&rep=rep1&type=pdf
+
+Speeding Up Constraint Propagation
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.100.9599&rep=rep1&type=pdf
+
+Generating Propagators for Finite Set Constraints
+http://www.gecode.org/papers/TackSchulteSmolka_CP_2006.pdf
+
+The Programming Language Aspects of ThingLab, a Constraint-Oriented Simulation Laboratory
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.90.2858&rep=rep1&type=pdf
+
+#Math
+On-Line Handwritten Formula Recognition with Integrated Correction, Recognition and Execution
+http://ieeexplore.ieee.org/iel5/7237/19583/00906143.pdf
+
+Recognition of Mathematics Notation via. Computer Using Baseline Structure
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.9.4193&rep=rep1&type=pdf
+
+On-Line Recognition of Mathematical. Expressions Using Automatic Rewriting Method
+http://www.inftyproject.org/articles/2000_ICMI_Kanahori.pdf
+
+Aiding Manipulation of Handwritten Mathematical Expressions through Style-Preserving Morphs
+http://ftp.qucis.queensu.ca/drl/papers/GI_2001.pdf
+
+Baseline Structure Analysis of Handwritten Mathematics Notation
+https://ritdml.rit.edu/bitstream/handle/1850/7906/RZanibbiConfProc09-2001.pdf?sequence=1
+
+Survey of User Input Models for Mathematical Recognition
+http://www.cs.berkeley.edu/~fateman/papers/lucyz-survey3.pdf
+
+Some Human Interaction Issues in Computer Algebra
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.80.6714&rep=rep1&type=ps
+
+A preliminary report on the MathBrush pen-math system
+http://www.cs.uwaterloo.ca/~glabahn/Papers/MathBrush-1.pdf
+
+Extraction de formules à partir de documents mathématiques
+http://www.loria.fr/~abelaid/publis/rfia99_afef.pdf
+
+A Handwriting-Based Equation Editor
+http://research.cs.queensu.ca/drl//ffes/papers/smithies_GI99.pdf
+
+Freehand Formula Entry System
+http://research.cs.queensu.ca/drl/ffes/papers/smithies_msc.ps
+
+Directions in Recognizing Tabular Structures of. Handwritten Mathematics Notation
+http://ftp.qucis.queensu.ca/drl/papers/zanGREC_2001.pdf
+
+#Various
+Learning from One Example Through Shared Densities on Transforms
+http://www.cs.umass.edu/~elm/papers/Miller_congealing.pdf
+
+Automatic Detection of Checkerboards on Blurred and Distorted Images
+http://robotics.ethz.ch/~scaramuzza/Davide_Scaramuzza_files/publications/pdf/IROS08_scaramuzza_b.pdf
+
+Computation of the Hausdorff distance between plane vector polylines
+http://mapcontext.com/autocarto/proceedings/auto-carto-12/pdf/computation-of-the-hausdorff-distance-between-plane.pdf
+
+Measures of Distributional Similarity
+http://www.ldc.upenn.edu/acl/P/P99/P99-1004.pdf
+
+3DbyStep: A Tool For Authoring 3D Presentations
+http://sibgrapi.sid.inpe.br/archive.cgi/sid.inpe.br/sibgrapi@80/2007/09.18.23.42
+
+Interval arithmetic: Python implementation and applications
+http://conference.scipy.org/SciPy2008/static/wiki/taschini_interval_arithmetic.pdf
+
+Recursive Gaussian Derivative Filters
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.75.1458&rep=rep1&type=pdf
+
+Recursive implementation of the Gaussian filter
+http://www.tnw.tudelft.nl/fileadmin/Faculteit/TNW/Over_de_faculteit/Afdelingen/Imaging_Science_and_Technology/Research/Research_Groups/Quantitative_Imaging/Publications/List_Publications/doc/SP95TYLV.pdf
+
+Algorithms in C (chapters 24 to 28 on geometry)
+http://www.cs.princeton.edu/~rs/
+
+Linear Algebra for Calculus
+http://www.butlercc.edu/mathematics/documents/linearalgebraVIIrotaxis.pdf
+
+Ellipse definition
+http://mathworld.wolfram.com/Ellipse.html
+
+Opencamlib references for learning computational geometry
+http://code.google.com/p/opencamlib/wiki/References
