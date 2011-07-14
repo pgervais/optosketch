@@ -215,10 +215,6 @@ class StrokeDescriptors(object):
     def extract(self, l1, l2):
         """Return the part of the polyline between lengths l1 and l2, starting
         from the beginning of the line."""
-
-        # This is intended to be used as a mean to analyse part of polylines,
-        # especially with conic fit. The algorithm is still to be established.
-
         debug = False
         ind = self._cumlength.searchsorted([l1, l2])
 

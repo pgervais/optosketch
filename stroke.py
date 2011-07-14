@@ -8,13 +8,15 @@ from frontend import GenericLine
 
 class StrokeItem(QtGui.QGraphicsPathItem, GenericLine):
     def __init__(self, pos=QtCore.QPointF(0.,0.), 
-                 color=QtGui.QColor('black'), *args):
+                 color=QtGui.QColor('black'), width = 1, *args, **kwargs):
         """pos is initial position. """
-        super(StrokeItem, self).__init__(*args)
+        super(StrokeItem, self).__init__(*args, **kwargs)
         self.path = QtGui.QPainterPath()
         self.path.moveTo(pos)
         self.setPath(self.path)
-        self.setPen(QtGui.QPen(color))
+        pen = QtGui.QPen(color)
+        pen.setWidth(width)
+        self.setPen(pen)
         self._time = time.time()
 
 

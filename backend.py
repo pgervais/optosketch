@@ -4,6 +4,7 @@ of frontend. Frontend communication must be implemented in a separate file.
 """
 
 from descriptors import StrokeDescriptors
+from intersection import SelfIntersection
 from simplify import simplify_dp
 import math
 import numpy as np
@@ -120,7 +121,7 @@ class RecognitionEngine(object):
 
         # Make recognition decision and call frontend here.
 ##         self.frontend.add_line(corners1) # Display line with detected corners.
-        if scratch[0] or True:
+        if scratch[0]:
             print ("Processing scratch")
             for p in scratch[1]:
                 self.frontend.add_point(p[0], p[1])
@@ -164,7 +165,13 @@ class RecognitionEngine(object):
             return
 
         # Display simplified line
-        self.frontend.add_line(s, kind="simplified")
+        print ("fallback: display simplified line")
+        self.frontend.add_line(s, kind="generic")
+
+        intersections = SelfIntersection(descriptors)
+        
+        for loop in intersections.get_loops():
+            self.frontend.add_line(descriptors.extract(*loop), kind="loop")
 
 
 ## Detectors
@@ -317,6 +324,26 @@ class RecognitionEngine(object):
         return (point, vector)
 
 
+    def inflection_points(self, descriptors):
+        """Compute the curvilinear coordinates of the inflection points
+        of the curve. This function is very sensitive to noise. Use only
+        descriptors of a denoised line as input (e.g. a simplified line)"""
+        zerocrossings = np.where(
+            descriptors._angles[1:] * descriptors._angles[:-1] < 0)[0]
+
+        print (zerocrossings)
+        print (descriptors._angles)
+
+        weighta = np.abs(descriptors._angles[zerocrossings])
+        weightb = np.abs(descriptors._angles[zerocrossings+1])
+        
+        # Stroke lengths at inflection points
+        inflection_lengths = descriptors._cumlength[zerocrossings] + \
+             weighta/(weighta+weightb)*descriptors._lengths[zerocrossings+1]
+
+        return(inflection_lengths)
+    
+
     def scratch_detector(self, descriptors):
         """Detect if a stroke can be a scratch.
         Descriptors must be computed on a simplified line. Otherwise, angle
@@ -333,22 +360,10 @@ class RecognitionEngine(object):
         print ("-- scratch --")
         size = max(descriptors._span)
         
-        # Inflection points-related quantities
-        zerocrossings = np.where(
-            descriptors._angles[1:] * descriptors._angles[:-1] < 0)[0]
-
-        weighta = np.abs(descriptors._angles[zerocrossings])
-        weightb = np.abs(descriptors._angles[zerocrossings+1])
-        
-        # Stroke lengths at inflection points
-        inflection_lengths = descriptors._cumlength[zerocrossings] + \
-             weighta/(weighta+weightb)*descriptors._lengths[zerocrossings+1]
-
         # Compute location of inflection points
-        # See resample()
+        inflection_lengths = self.inflection_points(descriptors)        
         resampled = descriptors.resample(lengths=inflection_lengths)
-
-        if len(resampled) < 2: return (False, ())
+        if len(resampled) < 2: return (False, resampled)
 
         # Compute pca on inflection points
         m = np.dot(np.ones(resampled.shape), np.diagflat(resampled.mean(0)))
@@ -363,10 +378,6 @@ class RecognitionEngine(object):
         svalue_ratio = S[1]/S[0]
         print ("ratio of singular values: %.2f " % svalue_ratio)
         print("inflection_angle: %.2f" % np.rad2deg(inflection_angle))
-
-        ## Ideas: - check alignment of inflection points
-        ## - use inflection points to get scratch orientation
-        ## - check lengths between successive inflection points. Does not work
 
         abs_angle_sum = np.abs(descriptors._angles).sum()
         angle_sum = abs(descriptors._angles.sum())

@@ -29,10 +29,15 @@ class FrontEndCanvas(FrontEnd):
 
     if kind == "simplified":
       color = QtGui.QColor('red')
+      width = 1
+    elif kind == "loop":
+      color = QtGui.QColor("lightgreen")
+      width = 2
     else:
       color = QtGui.QColor('black')
-      
-    sl = StrokeItem(color=color)
+      width = 1
+
+    sl = StrokeItem(color=color, width=width)
     sl.fromnumpy(line)
     self.scene.addItem(sl)
     return sl
