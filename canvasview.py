@@ -17,9 +17,21 @@ class FrontEndCanvas(FrontEnd):
     self.scene = scene
 
 
+  def remove_object(self, frontend_object):
+    self.scene.removeItem(frontend_object)
+    
+
   def add_point(self, x,y, kind=None):
+
+    if kind == "intersection":
+      color = QtGui.QColor('blue')
+      radius = 3
+    else:
+      color = QtGui.QColor('red')
+      radius = 5
+      
     sl = PointItem(QtCore.QPointF(x,y), 
-                   color=QtGui.QColor('red'), radius = 5)
+                   color=color, radius = radius)
     self.scene.addItem(sl)
     return sl
 

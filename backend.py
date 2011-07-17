@@ -4,7 +4,7 @@ of frontend. Frontend communication must be implemented in a separate file.
 """
 
 from descriptors import StrokeDescriptors
-from intersection import SelfIntersection
+from intersection import SelfIntersection, LineIntersection
 from simplify import simplify_dp
 import math
 import numpy as np
@@ -35,14 +35,14 @@ class Ray(object):
         self.unit = unit
         self.backend = backend
         
-        polyline = self.backend.ray_polyline(self.basepoint, self.unit)
-        self._frontend_object = frontend.add_ray(polyline, basepoint, unit)
+        self.polyline = self.backend.ray_polyline(self.basepoint, self.unit)
+        self._frontend_object = frontend.add_ray(self.polyline, basepoint, unit)
 
 
     def update(self):
         """Update ray."""
-        polyline = self.backend.ray_polyline(self.basepoint, self.unit)        
-        self._frontend_object.update(polyline, self.basepoint, self.unit)
+        self.polyline = self.backend.ray_polyline(self.basepoint, self.unit)        
+        self._frontend_object.update(self.polyline, self.basepoint, self.unit)
 
 
 class RecognitionEngine(object):
@@ -123,8 +123,29 @@ class RecognitionEngine(object):
 ##         self.frontend.add_line(corners1) # Display line with detected corners.
         if scratch[0]:
             print ("Processing scratch")
-            for p in scratch[1]:
-                self.frontend.add_point(p[0], p[1])
+            # Display intersections with the first ray drawn.
+            for n, ray in enumerate(self._rays):
+                ray_descriptors = StrokeDescriptors(ray.polyline)
+                intersections = LineIntersection(descriptors, ray_descriptors)
+
+                coordinates = np.asarray([l[3] for l in intersections.parts1[:-1]])
+                points = descriptors.resample(lengths=coordinates)
+#                print (points)
+                # Show intersection points (debug)
+##                 for p in points:
+##                     self.frontend.add_point(*p, kind="intersection")
+
+                if len(coordinates) >= len(scratch[1])-1 \
+                       and len(coordinates) > 2:
+                    self.frontend.remove_object(ray._frontend_object)
+                    del self._rays[n]
+                    print "erase ray"
+
+            # Show inflection points and line (debug)
+##             for p in scratch[1]:
+##                 self.frontend.add_point(p[0], p[1])
+##             self.frontend.add_line(stroke, kind="generic")
+            return
                 
         if point[0]:
             print ("Adding point")
@@ -168,10 +189,10 @@ class RecognitionEngine(object):
         print ("fallback: display simplified line")
         self.frontend.add_line(s, kind="generic")
 
-        intersections = SelfIntersection(descriptors)
-        
-        for loop in intersections.get_loops():
-            self.frontend.add_line(descriptors.extract(*loop), kind="loop")
+## Display loops
+##         intersections = SelfIntersection(descriptors)        
+##         for loop in intersections.get_loops():
+##             self.frontend.add_line(descriptors.extract(*loop), kind="loop")
 
 
 ## Detectors
@@ -324,15 +345,12 @@ class RecognitionEngine(object):
         return (point, vector)
 
 
-    def inflection_points(self, descriptors):
+    def inflection_points(self, descriptors, return_indices=False):
         """Compute the curvilinear coordinates of the inflection points
         of the curve. This function is very sensitive to noise. Use only
         descriptors of a denoised line as input (e.g. a simplified line)"""
         zerocrossings = np.where(
             descriptors._angles[1:] * descriptors._angles[:-1] < 0)[0]
-
-        print (zerocrossings)
-        print (descriptors._angles)
 
         weighta = np.abs(descriptors._angles[zerocrossings])
         weightb = np.abs(descriptors._angles[zerocrossings+1])
@@ -341,7 +359,11 @@ class RecognitionEngine(object):
         inflection_lengths = descriptors._cumlength[zerocrossings] + \
              weighta/(weighta+weightb)*descriptors._lengths[zerocrossings+1]
 
-        return(inflection_lengths)
+        if return_indices:
+            return (inflection_lengths, np.hstack(((0,), zerocrossings+1,
+                                                   (len(descriptors._angles)-1,))))
+        else:
+            return(inflection_lengths)
     
 
     def scratch_detector(self, descriptors):
@@ -361,13 +383,15 @@ class RecognitionEngine(object):
         size = max(descriptors._span)
         
         # Compute location of inflection points
-        inflection_lengths = self.inflection_points(descriptors)        
-        resampled = descriptors.resample(lengths=inflection_lengths)
-        if len(resampled) < 2: return (False, resampled)
+        inflection_lengths, inflection_indices = \
+                            self.inflection_points(descriptors, return_indices=True)
+        inflection_points = descriptors.resample(lengths=inflection_lengths)
+        if len(inflection_points) < 2: return (False, inflection_points)
 
         # Compute pca on inflection points
-        m = np.dot(np.ones(resampled.shape), np.diagflat(resampled.mean(0)))
-        U,S,V = svd(resampled - m, full_matrices=False);
+        m = np.dot(np.ones(inflection_points.shape),
+                   np.diagflat(inflection_points.mean(0)))
+        U,S,V = svd(inflection_points - m, full_matrices=False);
 
         # Ensure main direction points towards positive value
         if V[0,0] < 0. : V = -V
@@ -376,26 +400,46 @@ class RecognitionEngine(object):
         inflection_angle = math.atan2(V[0,1], V[0,0])
         # Ratio of singular values
         svalue_ratio = S[1]/S[0]
-        print ("ratio of singular values: %.2f " % svalue_ratio)
-        print("inflection_angle: %.2f" % np.rad2deg(inflection_angle))
 
         abs_angle_sum = np.abs(descriptors._angles).sum()
         angle_sum = abs(descriptors._angles.sum())
 
         angle_sum_criteria = abs(angle_sum - abs_angle_sum)
-        arc_number = len(inflection_lengths)+1
+        
+        # Check if end arcs can be counted in arc number.
+        # End lines are counted as arcs if their cumulated angle are greater
+        # than the median of the cumulated angles of inner arcs, divided by
+        # a constant factor.
+        arc_cumangles = abs(descriptors._cumangles[inflection_indices[1:]]
+                            - descriptors._cumangles[inflection_indices[:-1]])
+        threshold = np.median(arc_cumangles[1:-1])/1.5
+        print ("arc_cumangles: ", arc_cumangles)
+        print("threshold: %.2f" % threshold)
+        arc_number = len(inflection_indices)-3
+        if arc_cumangles[0] > threshold:
+            arc_number += 1
+        if arc_cumangles[-1] > threshold:
+            arc_number += 1
+        
+##        arc_number = len(inflection_lengths)+1
 
+        print ("inflection_indices:", inflection_indices)
+        print("inflection_angle: %.2f" % np.rad2deg(inflection_angle))
+
+        print ("* Detecting criteria:")
+        print ("angle_sum_criteria: %.2f >= 3.8" % angle_sum_criteria)
+        print ("arc_number: %d >= 4" % arc_number)
+        print ("svalue_ratio: %.2f <= 0.3 " % svalue_ratio)
         print ("-- end scratch --")
-##         print (angle_sum_criteria, arc_number)
 
         if size<17 \
-           or angle_sum_criteria < 4.5 \
-           or arc_number < 3 \
+           or angle_sum_criteria < 3.8 \
+           or arc_number < 4 \
            or svalue_ratio > 0.3:
-            return (False, resampled)
+            return (False, inflection_points)
         
         print ("** scratch detected **")
-        return (True, resampled)
+        return (True, inflection_points)
     
         
     def baseline_detector(self, descriptors, span=270):
