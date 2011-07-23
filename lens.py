@@ -4,7 +4,7 @@ from PyQt4 import QtGui, QtCore, Qt
 from PyQt4.QtCore import QPointF
 from point import PointItem
 import numpy as np
-
+import logging
 
 class LensItem(QtGui.QGraphicsPathItem):
     def __init__(self, xlocation=0., ylocation=0., span=50.,
@@ -56,23 +56,23 @@ class LensItem(QtGui.QGraphicsPathItem):
         self.setPath(self.path)
 
 
-
     def mousePressEvent(self, event):
         self.__startPos = event.pos()
-        print("mouse press (lens): ", self.__startPos.x(), self.__startPos.y())
+        logging.debug("LensItem: mouse press: %d %d" % (self.__startPos.x(), self.__startPos.y()))
         self.__moving = True
 
+
     def mouseReleaseEvent(self, event):
-        print("mouse release (lens)")
+        logging.debug("LensItem: mouse release.")
         self.__moving=False
         self.__startPos = None
 
+
     def mouseMoveEvent(self, event):
         if self.__moving :
-#            print ('mouse move to')
             current = event.scenePos() - self.__startPos
-#            print("mouse press (lens): ", current.x(), current.y())
             self.setPos(current.x(), self.ylocation)
+
 
     def setPos(self, x, y):
         newx, newy = x, y

@@ -5,6 +5,7 @@ This module handle self-intersection (and intersections between two
 different lines in the future).
 """
 import numpy as np
+import logging
 
 class Intersection(object):
     """Base class for line intersection computation. This class contains all
@@ -35,8 +36,6 @@ class Intersection(object):
         same one.
         """
 
-        debug = False
-
         assert (n1 < p1)
         if different == False: assert (p1 < n2)
         assert (n2 < p2)
@@ -50,25 +49,24 @@ class Intersection(object):
             x4 = self._a[p2,:]
 
         # Handle a lot of pathological cases
-        if debug:
-            print "[_two_segments_crossing] Points:"
-            print "[_two_segments_crossing]", x1, x2
-            print "[_two_segments_crossing] ", x3, x4
+        logging.log(5, "[_two_segments_crossing] Points following")
+        logging.log(5, "[_two_segments_crossing] "  +str(x1) +' '+str(x2))
+        logging.log(5, "[_two_segments_crossing] "  +str(x3) +' '+str(x4))
 
-            print "[_two_segments_crossing] Vectors:"
-            print '[_two_segments_crossing] 1-3:', x1 - x3
-            print '[_two_segments_crossing] 3-2:', x3 - x2
-            print '[_two_segments_crossing] 2-4:', x2 - x4
-            print '[_two_segments_crossing] 4-1:', x4 - x1
+        logging.log(5, "[_two_segments_crossing] Vectors following")
+        logging.log(5, '[_two_segments_crossing] 1-3: ' +str(x1 - x3))
+        logging.log(5, '[_two_segments_crossing] 3-2: ' +str(x3 - x2))
+        logging.log(5, '[_two_segments_crossing] 2-4: ' +str(x2 - x4))
+        logging.log(5, '[_two_segments_crossing] 4-1: ' +str(x4 - x1))
 
         # When one segment is of length zero, consider there is no intersection.
         # Side segments will report a crossing point.
         # Should never happen after line simplification
         if abs(x1-x2).sum() == 0:
-            print "[_two_segments_crossing] Zero-length segment"
+            logging.log(5, "[_two_segments_crossing] Zero-length segment")
             return None 
         if abs(x3-x4).sum() == 0:
-            print "[_two_segments_crossing] Zero-length segment"  
+            logging.log(5, "[_two_segments_crossing] Zero-length segment")
             return None
 
         #1-3/3-2/2-4/4-1
@@ -76,47 +74,45 @@ class Intersection(object):
         cp2 = np.cross(x3-x2, x2-x4)
         cp3 = np.cross(x2-x4, x4-x1)
         cp4 = np.cross(x4-x1, x1-x3)
-        if debug:
-            print "[_two_segments_crossing] CP: ", cp1, cp2, cp3, cp4
+        logging.log(5, "[_two_segments_crossing] CP: "+str(cp1)+' '+str(cp2)+' '+str(cp3)+' '+str(cp4))
 
         # Check if segments are aligned
         cp = np.cross(x2-x1, x4-x3)
         if cp == 0:
             aligned = True
-            print "[_two_segments_crossing] segments aligned (warning)"
+            logging.log(5, "[_two_segments_crossing] segments aligned (warning)")
         else: aligned = False
 
         # If two points are at the same location, report only one case.
         if abs(x1-x4).sum() == 0:
-            print "[_two_segments_crossing] 1 == 4 : discard"  
+            logging.log(5, "[_two_segments_crossing] 1 == 4 : discard")
             return None
         if abs(x1-x3).sum() == 0:
-            print "[_two_segments_crossing] 1 == 3 : discard"  
+            logging.log(5, "[_two_segments_crossing] 1 == 3 : discard")
             return None
         if abs(x2-x4).sum() == 0:
-            print "[_two_segments_crossing] 2 == 4 : discard"  
+            logging.log(5, "[_two_segments_crossing] 2 == 4 : discard")
             return None
         if abs(x2-x3).sum() == 0:
-            print "[_two_segments_crossing] 1 == 3 : authorized"  
+            logging.log(5, "[_two_segments_crossing] 1 == 3 : ok")
         else:
             # One point may lie on the **direction** of the other segment
             if cp1 == 0 and not aligned: # point 3 on segment 1-2
                 # Intersection will be reported by the other segment
-                if debug: print "[_two_segments_crossing] 3 on 1-2 : discard"
+                logging.log(5, "[_two_segments_crossing] 3 on 1-2 : discard")
                 return None
             if cp4 == 0 and not aligned: # point 1 on segment 3-4
                 # Intersection will be reported by the other segment
-                if debug: print "[_two_segments_crossing] 1 on 3-4 : discard" 
+                logging.log(5, "[_two_segments_crossing] 1 on 3-4 : discard")
                 return None
 
-            if debug:
-                if cp2 == 0: print "[_two_segments_crossing] 2 on 3-4"
-                if cp3 == 0: print "[_two_segments_crossing] 4 on 1-2"
+            if cp2 == 0: logging.log(5, "[_two_segments_crossing] 2 on 3-4")
+            if cp3 == 0: logging.log(5, "[_two_segments_crossing] 4 on 1-2")
 
         if cp1*cp2 < 0: return None
         if cp2*cp3 < 0: return None
         if cp3*cp4 < 0: return None
-        if debug: print "*** Crossing found ***"
+        logging.debug("*** Crossing found ***")
 
         # Parallel segments: return any point
         # FIXME: the returned lengths to crossing do not correspond to the
@@ -132,12 +128,11 @@ class Intersection(object):
         # alpha must be between 0 and norm1
         # beta must be between 0 and norm2
         # And... alpha*u1 + x1 == beta*u2 + x3
-        if debug:
-            print "[_two_segments_crossing] alpha, norm1:", alpha, norm1
-            print "[_two_segments_crossing] beta, norm2:", beta, norm2
-            print "[_two_segments_crossing] crossing:", alpha*u1 + x1, '==', beta * u2 + x3
+        logging.log(5, "[_two_segments_crossing] alpha, norm1: " +str(alpha) + ' '+str(norm1))
+        logging.log(5, "[_two_segments_crossing] beta, norm2: " +str(beta) +' '+ str(norm2))
+        logging.log(5, "[_two_segments_crossing] crossing: " +str(alpha*u1 + x1) + ' == ' + str(beta * u2 + x3))
         # Return coordinates of crossing, and lengths from x1 and x3 to the crossing.
-        return alpha*u1 + x1, alpha, beta
+        return (alpha*u1 + x1, alpha, beta)
 
 
 class SelfIntersection(Intersection):
@@ -164,8 +159,6 @@ class SelfIntersection(Intersection):
             interlengths.append(l2)
 
         interlengths.sort()
-        #print "Crossings: "
-        #print self.crossings
         assert(len(interlengths) == len(self.crossings)*2)
 
         self.parts[0].append(None)
@@ -197,9 +190,6 @@ class SelfIntersection(Intersection):
                 c[1], c[3] = c[3], c[1]
                 c[0], c[2] = c[2], c[0]
                 
-        #print "\nParts:"
-        #print self.parts
-
 
     def __len__(self):
         """Return number of line subparts."""
@@ -267,29 +257,19 @@ class SelfIntersection(Intersection):
         """
 
         if p1-n1 == 1 and p2-n2 == 1:
-            #print "\nCandidates: [%d, %d] [%d, %d]" %(n1, p1, n2, p2)
-
             # Same line only !
             if p1 != n2:
                 loc = self._two_segments_crossing(n1, p1, n2, p2,
                                                   different=False)
                 if not loc is None:
-##                    print "[__cross_intersection] loc:", loc, n1, n2
-                    ## loc == (crossing location, alpha, beta)
-                    if n1 == 0:
-                        l1 = loc[1]
-                    else:
-                        l1 = self._gea._cumlength[n1-1] + loc[1]
+                    if n1 == 0:  l1 = loc[1]
+                    else: l1 = self._gea._cumlength[n1-1] + loc[1]
 
-                    if n2 == 0:
-                        l1 = loc[2]
-                    else:
-                        l2 = self._gea._cumlength[n2-1] + loc[2]
+                    if n2 == 0: l1 = loc[2]
+                    else: l2 = self._gea._cumlength[n2-1] + loc[2]
 
-                    if l1 <= l2:
-                        self.crossings.append((loc[0], l1, l2))
-                    else:
-                        self.crossings.append((loc[0], l2, l1))
+                    if l1 <= l2: self.crossings.append((loc[0], l1, l2))
+                    else: self.crossings.append((loc[0], l2, l1))
             return # End of first if
 
         # Cut longest line in half
@@ -406,8 +386,6 @@ class LineIntersection(Intersection):
                 c[1], c[3] = c[3], c[1]
                 c[0], c[2] = c[2], c[0]
         
-#        print "Parts:", self.parts1, self.parts2
-
 
     def get_part(self, lineno, value):
         """Return n-th part of line. The number of parts is equal to
@@ -442,23 +420,17 @@ class LineIntersection(Intersection):
         # FIXME: merge with the method of same name in SelfIntersection
         
         debug = False
-        # Lines cannot be cut anymore
+        # Lines cannot be cut more
         if p1-n1 == 1 and p2-n2 == 1:
-            #print "\nCandidates: [%d, %d] [%d, %d]" %(n1, p1, n2, p2)
-
             loc = self._two_segments_crossing(n1, p1, n2, p2, different=True)
             if not loc is None:
-                if debug: print "[_cross_intersection] loc:", loc, n1, n2
+                logging.log(5, "[_cross_intersection] loc: " +str(loc) +' '+str(n1)+' '+str(n2))
                 ## loc == (crossing location, alpha, beta)
-                if n1 == 0:
-                    l1 = loc[1]
-                else:
-                    l1 = self._gea._cumlength[n1-1] + loc[1]
+                if n1 == 0: l1 = loc[1]
+                else: l1 = self._gea._cumlength[n1-1] + loc[1]
 
-                if n2 == 0:
-                    l2 = loc[2]
-                else:
-                    l2 = self._geb._cumlength[n2-1] + loc[2]
+                if n2 == 0: l2 = loc[2]
+                else: l2 = self._geb._cumlength[n2-1] + loc[2]
 
                 self.crossings.append((loc[0], l1, l2))
             return # After 'if not loc is None'
@@ -489,111 +461,3 @@ class LineIntersection(Intersection):
         bbi = self._bbox_intersection(b1, b2)
 
         return not bbi is None
-
-        
-##     def _two_segments_crossing(self, n1, p1, n2, p2):
-##         """First part : n1, p1, Second part: n2, p2 (indices)
-##         This function must be called with n1 < p1  and  n2 < p2 .
-##         """
-##         # FIXME: merge with method of the same name in SelfIntersection.
-
-##         debug = False
-
-##         assert (n1 < p1)
-##         assert (n2 < p2)
-##         x1 = self._a[n1,:]
-##         x2 = self._a[p1,:]
-##         x3 = self._b[n2,:]
-##         x4 = self._b[p2,:]
-
-##         # Handle a lot of pathological cases
-##         if debug:
-##             print "[_two_segments_crossing] Points:"
-##             print "[_two_segments_crossing]", x1, x2
-##             print "[_two_segments_crossing] ", x3, x4
-
-##             print "[_two_segments_crossing] Vectors:"
-##             print '[_two_segments_crossing] 1-3:', x1 - x3
-##             print '[_two_segments_crossing] 3-2:', x3 - x2
-##             print '[_two_segments_crossing] 2-4:', x2 - x4
-##             print '[_two_segments_crossing] 4-1:', x4 - x1
-
-##         # When one segment is of length zero, consider there is no intersection.
-##         # Side segments will report a crossing point.
-##         # Should never happen after line simplification
-##         if abs(x1-x2).sum() == 0:
-##             print "[_two_segments_crossing] Zero-length segment"
-##             return None 
-##         if abs(x3-x4).sum() == 0:
-##             print "[_two_segments_crossing] Zero-length segment"  
-##             return None
-
-##         #1-3/3-2/2-4/4-1
-##         cp1 = cross(x1-x3, x3-x2)
-##         cp2 = cross(x3-x2, x2-x4)
-##         cp3 = cross(x2-x4, x4-x1)
-##         cp4 = cross(x4-x1, x1-x3)
-##         if debug:
-##             print "[_two_segments_crossing] CP: ", cp1, cp2, cp3, cp4
-
-##         # Check if segments are aligned
-##         cp = cross(x2-x1, x4-x3)
-##         if cp == 0:
-##             aligned = True
-##             print "[_two_segments_crossing] segments aligned (warning)"
-##         else: aligned = False
-
-##         # If two points are at the same location, report only one case. 
-##         if abs(x1-x4).sum() == 0:
-##             print "[_two_segments_crossing] 1 == 4 : discard"  
-##             return None
-##         if abs(x1-x3).sum() == 0:
-##             print "[_two_segments_crossing] 1 == 3 : discard"  
-##             return None
-##         if abs(x2-x4).sum() == 0:
-##             print "[_two_segments_crossing] 2 == 4 : discard"  
-##             return None
-##         if abs(x2-x3).sum() == 0:
-##             print "[_two_segments_crossing] 1 == 3 : authorized"  
-##         else:
-##             # One point may lie on the other segment (at least, its direction)
-##             if cp1 == 0 and not aligned: # point 3 on line 1-2
-##                 # Intersection will be reported by the other segment
-##                 if debug: print "[_two_segments_crossing] 3 on 1-2 : discard"
-##                 return None
-##             if cp4 == 0 and not aligned: # point 1 on line 3-4
-##                 # Intersection will be reported by the other segment
-##                 if debug: print "[_two_segments_crossing] 1 on 3-4 : discard"  
-##                 return None
-            
-##             if debug:
-##                 if cp2 == 0: print "[_two_segments_crossing] 2 on 3-4"
-##                 if cp3 == 0: print "[_two_segments_crossing] 4 on 1-2"
-
-##         if cp1*cp2 < 0: return None
-##         if cp2*cp3 < 0: return None
-##         if cp3*cp4 < 0: return None
-##         if debug: print "*** Crossing found ***"
-
-##         # Parallel segments: return any point
-##         # FIXME: the returned lengths to crossing do not correspond to the same
-##         # point
-##         if cp == 0: return x1, 0, 0
-
-##         norm1 = sqrt(((x2-x1)**2).sum())
-##         norm2 = sqrt(((x4-x3)**2).sum())
-##         u1 = (x2-x1)/norm1 # unitary vectors
-##         u2 = (x4-x3)/norm2
-##         alpha = - np.cross(u2, x3-x1)/(cp/(norm1*norm2))
-##         beta = - np.cross(u1, x3-x1)/(cp/(norm1*norm2))    
-##         # alpha must be between 0 and norm1
-##         # beta must be between 0 and norm2
-##         # And... alpha*u1 + x1 == beta*u2 + x3
-##         if debug:
-##             print "[_two_segments_crossing] alpha, norm1:", alpha, norm1
-##             print "[_two_segments_crossing] beta, norm2:", beta, norm2
-##             print "[_two_segments_crossing] crossing:", alpha*u1 + x1, '==', beta * u2 + x3
-##         # Return coordinates of crossing, and lengths from x1 and x3 to the crossing.
-##         return alpha*u1 + x1, alpha, beta
-
-

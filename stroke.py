@@ -5,7 +5,6 @@ import numpy as np
 import time
 from frontend import GenericLine
 
-
 class StrokeItem(QtGui.QGraphicsPathItem, GenericLine):
     def __init__(self, pos=QtCore.QPointF(0.,0.), 
                  color=QtGui.QColor('black'), width = 1, *args, **kwargs):

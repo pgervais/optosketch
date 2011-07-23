@@ -3,7 +3,7 @@
 from PyQt4 import QtGui, QtCore 
 from mainwindow import Ui_MainWindow
 from backend import RecognitionEngine
-
+import logging
 
 class Board(QtGui.QMainWindow):
   def __init__(self, parent=None):
@@ -22,6 +22,17 @@ class Application(QtGui.QApplication):
 
 if __name__ == "__main__":
   import sys
-  a = Application(sys.argv)  
+
+  logging.addLevelName(5, "DEBUG2")
+  logging.getLogger().setLevel(logging.DEBUG)
+#  logging.getLogger().setLevel(5)
+  ch = logging.StreamHandler()
+#  ch.setLevel(logging.DEBUG)
+  formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+  ch.setFormatter(formatter)
+  logging.getLogger().addHandler(ch)
+  logging.debug('Debug logging activated')
+
+  a = Application(sys.argv)
   sys.exit(a.exec_())
 

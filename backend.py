@@ -6,9 +6,11 @@ of frontend. Frontend communication must be implemented in a separate file.
 from descriptors import StrokeDescriptors
 from intersection import SelfIntersection, LineIntersection
 from simplify import simplify_dp
+
 import math
 import numpy as np
 from numpy.linalg import svd
+import logging
 
 class Baseline(object):
     def __init__(self, frontend, ylocation, span=300):
@@ -82,7 +84,7 @@ class RecognitionEngine(object):
         if not isinstance(objects_list, (list, tuple)):
             objects_list = (objects_list,)
 
-        print ("removing: ", objects_list) 
+        logging.debug("removing: "+str(objects_list))
         deleted_lenses = 0;
         deleted_baseline = False;
 
@@ -118,70 +120,67 @@ class RecognitionEngine(object):
     def push_stroke(self, stroke):
         """Provides the engine with a new stroke. Interpretation is performed."""
         
-        print "--- Raw line ---"
-        print "number of points: ",len(stroke)
+        logging.debug("--- Raw line ---")
+        logging.debug("number of points: "+str(len(stroke)))
         # print "coordinates: ", stroke
 
-        print ("--- Descriptors ---")
         descriptors = StrokeDescriptors(stroke)
-        print (descriptors)
-        # print "Angles:\n", descriptors._angles
+        logging.info("--- Descriptors ---")
+        logging.debug(str(descriptors))
 
         # Call detectors here
-        print("--- Detectors ---")
+        logging.info("--- Detectors ---")
+
         point = descriptors.point_detector()
-        print "Point: "+str(point) 
-        line  = descriptors.straight_line_detector()        
-        print "Line: "+str(line)
-
+        line  = descriptors.straight_line_detector()
         baseline = self.baseline_detector(descriptors)
-        print "Baseline: "+str(baseline)
-
         lens = self.lens_detector(descriptors)
-        print "Lens: "+str(lens)
-
         ray = self.ray_detector(descriptors)
-        print "Ray: "+str(ray)
 
-
-        print "--- Simplification ---"
         threshold = 1.
         d = simplify_dp(stroke[:,0], stroke[:,1])
         s = stroke[d>threshold]
-        print "threshold: ", threshold
-        print "number of points: ", len(s) 
+        logging.debug("simplification threshold: "+str(threshold))
+        logging.debug("number of points after simplification: "+ str(len(s)))
 
         simplified_descriptors = StrokeDescriptors(s)
         scratch = self.scratch_detector(simplified_descriptors)
-        print "Scratch: "+str(scratch)
 
-        print("--- Corners detection ---")
+        logging.info("Point detector   : "+str(point))
+        logging.info("Line detector    : "+str(line))
+        logging.info("Baseline detector: "+str(baseline))
+        logging.info("Lens detector    : "+str(lens))
+        logging.info("Ray detector     : "+str(ray))
+        logging.info("Scratch detector : "+str(scratch))
+
+        logging.info("--- Corners detection ---")
         resamp = descriptors.resample()
         corners1 = descriptors.corners1()
 
         # Make recognition decision and call frontend here.
         if scratch[0]:
-            print ("Processing scratch")            
+            logging.info("Processing scratch")
             todelete = self.scratch_get_todelete(scratch, descriptors)
             self.remove_object(todelete)
             return
                 
         if point[0]:
-            print ("Adding point")
+            logging.info("Adding point")
             self.frontend.add_point(point[1], point[2])
             return 
 
         if baseline:
             if self._baseline is None:
-                print ("Adding baseline")
+                logging.info("Adding baseline")
                 ylocation = (stroke[0,1] + stroke[-1, 1])/2.
                 self._baseline = Baseline(self.frontend, ylocation)
                 return
             else:
-                print ("Already a baseline")
+                logging.error("Already a baseline")
 
         if lens:
-            print ("Adding a lens")
+            default_focal_length = 50
+            logging.info("Adding a lens")
             xlocation = (stroke[0,0] + stroke[-1, 0])/2.
             if len(self._lenses) % 2 == 0:
                 sign = 1
@@ -189,26 +188,26 @@ class RecognitionEngine(object):
                 sign = -1
             self._lenses.append(Lens(self.frontend, xlocation,
                                      self._baseline._frontend_object,
-                                     focal=50*sign))
+                                     focal=default_focal_length*sign))
             # Update ray objects.
             for ray in self._rays: ray.update()
             return
 
         if ray[0]:
-            print("Adding a ray")
+            logging.info("Adding a ray")
             self._rays.append(Ray(self.frontend, self, *ray[1:]))
             return
             
         if line[0]:
-            print("Adding generic line")
+            logging.info("Adding generic line")
             self.frontend.add_line(stroke[(0,-1),:], kind="generic")
             return
 
         # Display simplified line
-        print ("fallback: display simplified line")
-        self.frontend.add_line(s, kind="generic")
+##         logging.info("fallback: adding simplified line")
+##         self.frontend.add_line(s, kind="generic")
 
-## Display loops
+## Display loops (debug)
 ##         intersections = SelfIntersection(descriptors)        
 ##         for loop in intersections.get_loops():
 ##             self.frontend.add_line(descriptors.extract(*loop), kind="loop")
@@ -290,9 +289,6 @@ class RecognitionEngine(object):
         
     
     def ray_polyline(self, basepoint, unit):
-##         print ("unit: ", unit)
-##         print ("basepoint: ", basepoint)
-
         # Get sorted lens locations
         lenses_x = np.array([(l.xlocation, l.focal,
                               l._frontend_object.ylocation)
@@ -398,7 +394,7 @@ class RecognitionEngine(object):
         - Inflection points are roughly aligned
         """
 
-        print ("-- scratch --")
+        logging.debug("-- scratch detector --")
         # If simplified line is perfectly straight, do nothing.
         print descriptors._a.shape
         if descriptors._a.shape[0] <= 2: return (False,)
@@ -436,8 +432,8 @@ class RecognitionEngine(object):
         arc_cumangles = abs(descriptors._cumangles[inflection_indices[1:]]
                             - descriptors._cumangles[inflection_indices[:-1]])
         threshold = np.median(arc_cumangles[1:-1])/1.5
-        print ("arc_cumangles: ", arc_cumangles)
-        print("threshold: %.2f" % threshold)
+        logging.debug("arc_cumangles: "+str(arc_cumangles))
+        logging.debug("threshold: %.2f" % threshold)
         arc_number = len(inflection_indices)-3
         if arc_cumangles[0] > threshold:
             arc_number += 1
@@ -446,14 +442,14 @@ class RecognitionEngine(object):
         
 ##        arc_number = len(inflection_lengths)+1
 
-        print ("inflection_indices:", inflection_indices)
-        print("inflection_angle: %.2f" % np.rad2deg(inflection_angle))
+        logging.debug("inflection_indices: " + str(inflection_indices))
+        logging.debug("inflection_angle: %.2f" % np.rad2deg(inflection_angle))
 
-        print ("* Detecting criteria:")
-        print ("angle_sum_criteria: %.2f >= 3.8" % angle_sum_criteria)
-        print ("arc_number: %d >= 4" % arc_number)
-#        print ("svalue_ratio: %.2f <= 0.3 " % svalue_ratio)
-        print ("-- end scratch --")
+        logging.debug("* Detecting criteria:")
+        logging.debug("angle_sum_criteria: %.2f >= 3.8" % angle_sum_criteria)
+        logging.debug("arc_number: %d >= 4" % arc_number)
+#        logging.debug("svalue_ratio: %.2f <= 0.3 " % svalue_ratio)
+        logging.debug("-- end scratch --")
 
         if size<17 \
            or angle_sum_criteria < 3.8 \
@@ -461,7 +457,7 @@ class RecognitionEngine(object):
 #           or svalue_ratio > 0.3 
             return (False, inflection_points)
         
-        print ("** scratch detected **")
+        logging.debug("** scratch detected **")
         # TODO: return a dictionary instead of inflection_points.
         return (True, inflection_points)
 
@@ -504,8 +500,8 @@ class RecognitionEngine(object):
         - horizontal coordinate of rightmost point is greater than span.
         """
         line  = descriptors.straight_line_detector()        
-        print (descriptors._a[0,0])
-        print (descriptors._a[-1,0])
+        logging.debug(str(descriptors._a[0,0]))
+        logging.debug(str(descriptors._a[-1,0]))
 
         if line[0] \
            and line[1] == 'horizontal' \

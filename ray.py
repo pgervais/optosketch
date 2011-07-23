@@ -2,6 +2,8 @@
 
 from PyQt4 import QtGui, QtCore, Qt
 from PyQt4.QtCore import QPointF
+
+import logging
 import numpy as np
 
 default_color = QtGui.QColor('orange')
@@ -33,7 +35,6 @@ class RayHandleItem(QtGui.QGraphicsPathItem):
 
         self.setCursor(Qt.Qt.SizeAllCursor)
         self.__moving = False
-        print (self.parentItem())
 
 
     def _draw(self, basepoint, unit):
@@ -47,13 +48,12 @@ class RayHandleItem(QtGui.QGraphicsPathItem):
     def update(self, basepoint, unit):
         """Update handle position and orientation."""
         self.path = QtGui.QPainterPath()
-#        self.setPen(self.pen)
         self._draw(basepoint, unit)
         self.setPath(self.path)
         
         
     def mousePressEvent(self, event):
-        print ('press')
+        logging.debug('RayHandleItem: mouse press')
         self.__moving = True
 
 

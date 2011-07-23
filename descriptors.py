@@ -24,6 +24,7 @@ Useful methods :
 """
 
 import math
+import logging
 from math import radians, pi
 from array import array
 
@@ -117,7 +118,7 @@ class StrokeDescriptors(object):
         # Detrend
         P = np.polyfit(self._cumlength[1:], self._cumangles, 1)
         self._angle_rate = P[0]
-        print 'polynom:', P
+        logging.debug('polynom: '+str(P))
 
         self._cumangles_d = self._cumangles - np.polyval(P, self._cumlength[1:])
 
@@ -215,14 +216,7 @@ class StrokeDescriptors(object):
     def extract(self, l1, l2):
         """Return the part of the polyline between lengths l1 and l2, starting
         from the beginning of the line."""
-        debug = False
         ind = self._cumlength.searchsorted([l1, l2])
-
-        assert (l1 >= 0.)
-        if debug:
-            print '[extract], l1, l2:', l1, l2
-            print '[extract] Extracted:', ind, 'Lengths:', self._cumlength[ind[0]], \
-                  self._cumlength[min(ind[1], len(self._cumlength)-1)]
         
         # First point: always exists
         ends = 0
@@ -267,9 +261,9 @@ class StrokeDescriptors(object):
         thresh = 5.
 
         value = self._span.max()*self._span.mean()/self._length
-        print "[point] %.2f vs %.2f" % (value, thresh)
+        logging.debug("[point] %.2f vs %.2f" % (value, thresh))
         if value <= thresh: # point
-            print "** Point detected **"
+            logging.debug("** Point detected **")
             return (True, self._center[0],self._center[1])
 
         return (False, None, None)
@@ -299,8 +293,8 @@ class StrokeDescriptors(object):
 
         endtoend = np.sqrt(((s[0,:]-s[-1,:])**2).sum())
         ratio = _length / endtoend
-        print "Straight line: %.2f %.2f / %.2f = %.2f" % \
-            (self._length, _length, endtoend, ratio)
+        logging.debug("Straight line: %.2f %.2f / %.2f = %.2f" % \
+            (self._length, _length, endtoend, ratio))
 
         if ratio < 1.03:
             _lx, _ly = np.abs(s[0,:]-s[-1,:])
@@ -356,6 +350,4 @@ class StrokeDescriptors(object):
         ind = np.where(np.r_[True, straws[1:] < straws[:-1]] 
                        & np.r_[straws[:-1] < straws[1:], True]
                        & (straws < threshold))[0]
-        print straws[ind]
-        print ind
         return np.r_[resampled[:1,:], resampled[ind+w-1,:], resampled[-1:,:]]

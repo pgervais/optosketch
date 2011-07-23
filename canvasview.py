@@ -2,6 +2,7 @@
 
 from PyQt4 import QtGui, QtCore
 import time
+import logging
 
 from stroke import StrokeItem
 from point import PointItem
@@ -107,7 +108,7 @@ class CanvasScene(QtGui.QGraphicsScene):
 
   def keyPressEvent(self, event):
     key = event.key()
-    print key
+    logging.debug("event.key(): "+str(key))
 
     # Display last stroke coordinates as a numpy array.
     if key == 80: # p (print)
@@ -129,7 +130,7 @@ class CanvasScene(QtGui.QGraphicsScene):
 
   def mousePressEvent(self, event):
     ret = super(CanvasScene, self).mousePressEvent(event)
-    print "Mouse press (scene).", ret
+    logging.debug("Mouse press (scene)."+str(ret))
     grabber = self.mouseGrabberItem()
     if not grabber is None:
       pass
@@ -150,7 +151,7 @@ class CanvasScene(QtGui.QGraphicsScene):
 
 
   def mouseReleaseEvent(self, event):
-    print "Mouse release (scene)."
+    logging.debug("Mouse release (scene).")
     if self.currentitem:
       self.removeItem(self.currentitem)
       self.engine.push_stroke(self.currentitem.tonumpy())
