@@ -87,7 +87,8 @@ class RecognitionEngine(object):
         deleted_baseline = False;
 
         for obj in objects_list:
-            self.frontend.remove_object(obj._frontend_object)
+            if not isinstance(obj, Baseline):
+                self.frontend.remove_object(obj._frontend_object)
 
             if isinstance(obj, Ray):
                 del self._rays[self._rays.index(obj)]
@@ -98,6 +99,7 @@ class RecognitionEngine(object):
                 # Baseline can be deleted only if nothing else must be deleted.
                 self._baseline = None
                 deleted_baseline = True
+                self.frontend.remove_object(obj._frontend_object)
 ##                 del self._baseline[self._baseline.index(obj)]
 
         # Erase everything if the baseline has been deleted
