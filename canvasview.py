@@ -1,6 +1,8 @@
 # This file is part of Optosketch. It is released under the GPL v2 licence.
 
 from PyQt4 import QtGui, QtCore
+import time
+
 from stroke import StrokeItem
 from point import PointItem
 from baseline import BaselineItem
@@ -108,8 +110,17 @@ class CanvasScene(QtGui.QGraphicsScene):
     print key
 
     # Display last stroke coordinates as a numpy array.
-    if key == 80: # p 
+    if key == 80: # p (print)
+      print ("last stroke:")
       print (self.strokeitem[-1].tonumpy())
+      
+    elif key == 83: # s (save) for debugging.
+      dt = time.strftime("%Y%m%d%H%M%S")
+      print("Saving every strokes. Time: %s" % dt)
+      for n, stroke in enumerate(self.strokeitem):
+        filename = "strokes/stroke_%s_%.2d.dat" % (dt, n)
+        stroke.save(filename)
+      
     elif key == 69: # e
       print "Existing objects: "+self.engine.content()
     else:

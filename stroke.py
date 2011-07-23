@@ -52,3 +52,9 @@ class StrokeItem(QtGui.QGraphicsPathItem, GenericLine):
             self.path.lineTo(l[0], l[1])
 
         self.setPath(self.path)
+
+
+    def save(self, filename):
+        """Save the stroke in a file (for debugging)."""
+        np.savetxt(filename, self.tonumpy())
+
