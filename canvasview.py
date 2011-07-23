@@ -163,8 +163,8 @@ class CanvasView(QtGui.QGraphicsView):
     self.setResizeAnchor(QtGui.QGraphicsView.AnchorViewCenter)
 
     scene.addItem(PointItem(QtCore.QPointF(0.,0.), 
-                            color=QtGui.QColor('red'),
-                            radius = 5)
+                            color=QtGui.QColor('blue'),
+                            radius = 3)
                   );
  #   text = scene.addText("foo bar")
  #   text.setPos(0,0)

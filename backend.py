@@ -13,7 +13,9 @@ from numpy.linalg import svd
 class Baseline(object):
     def __init__(self, frontend, ylocation, span=300):
         self.ylocation = ylocation
+        self.polyline = np.asarray([[-span, ylocation],[span,ylocation]])
         self._frontend_object = frontend.add_baseline(ylocation, span)
+
 
 class Lens(object):
     def __init__(self, frontend, xlocation, baseline, focal=50.,
@@ -22,6 +24,8 @@ class Lens(object):
         self.xlocation = xlocation
         self.focal = focal
         self.baseline = baseline
+        self.polyline = np.asarray([[xlocation, baseline.ylocation-span],
+                                    [xlocation, baseline.ylocation+span]])
         self._frontend_object = frontend.add_lens(xlocation, baseline,
                                                   focal=focal,
                                                   span=span, kind=kind)
@@ -71,7 +75,43 @@ class RecognitionEngine(object):
                 s+="Lens: xlocation = "+str(l.xlocation)+"\n"
 
         return s
+
     
+    def remove_object(self, objects_list):
+        """Delete objects."""
+        if not isinstance(objects_list, (list, tuple)):
+            objects_list = (objects_list,)
+
+        print ("removing: ", objects_list) 
+        deleted_lenses = 0;
+        deleted_baseline = False;
+
+        for obj in objects_list:
+            self.frontend.remove_object(obj._frontend_object)
+
+            if isinstance(obj, Ray):
+                del self._rays[self._rays.index(obj)]
+            elif isinstance(obj, Lens):
+                del self._lenses[self._lenses.index(obj)]
+                deleted_lenses = deleted_lenses + 1
+            elif isinstance(obj, Baseline) and len(objects_list) == 1:
+                # Baseline can be deleted only if nothing else must be deleted.
+                self._baseline = None
+                deleted_baseline = True
+##                 del self._baseline[self._baseline.index(obj)]
+
+        # Erase everything if the baseline has been deleted
+        if (deleted_baseline):
+            for obj in self._rays + self._lenses:
+                self.frontend.remove_object(obj._frontend_object)
+            self._rays = []
+            self._lenses = []            
+            return
+        
+        # Update rays if a lens has been deleted
+        if (deleted_lenses > 0):
+            for ray in self._rays: ray.update()
+
                 
     def push_stroke(self, stroke):
         """Provides the engine with a new stroke. Interpretation is performed."""
@@ -116,35 +156,12 @@ class RecognitionEngine(object):
         print("--- Corners detection ---")
         resamp = descriptors.resample()
         corners1 = descriptors.corners1()
-#        print "corners:",corners1
-#        print 'resampled point number: %d' % len(resamp)
 
         # Make recognition decision and call frontend here.
-##         self.frontend.add_line(corners1) # Display line with detected corners.
         if scratch[0]:
-            print ("Processing scratch")
-            # Display intersections with the first ray drawn.
-            for n, ray in enumerate(self._rays):
-                ray_descriptors = StrokeDescriptors(ray.polyline)
-                intersections = LineIntersection(descriptors, ray_descriptors)
-
-                coordinates = np.asarray([l[3] for l in intersections.parts1[:-1]])
-                points = descriptors.resample(lengths=coordinates)
-#                print (points)
-                # Show intersection points (debug)
-##                 for p in points:
-##                     self.frontend.add_point(*p, kind="intersection")
-
-                if len(coordinates) >= len(scratch[1])-1 \
-                       and len(coordinates) > 2:
-                    self.frontend.remove_object(ray._frontend_object)
-                    del self._rays[n]
-                    print "erase ray"
-
-            # Show inflection points and line (debug)
-##             for p in scratch[1]:
-##                 self.frontend.add_point(p[0], p[1])
-##             self.frontend.add_line(stroke, kind="generic")
+            print ("Processing scratch")            
+            todelete = self.scratch_get_todelete(scratch, descriptors)
+            self.remove_object(todelete)
             return
                 
         if point[0]:
@@ -380,6 +397,10 @@ class RecognitionEngine(object):
         """
 
         print ("-- scratch --")
+        # If simplified line is perfectly straight, do nothing.
+        print descriptors._a.shape
+        if descriptors._a.shape[0] <= 2: return (False,)
+        
         size = max(descriptors._span)
         
         # Compute location of inflection points
@@ -429,18 +450,49 @@ class RecognitionEngine(object):
         print ("* Detecting criteria:")
         print ("angle_sum_criteria: %.2f >= 3.8" % angle_sum_criteria)
         print ("arc_number: %d >= 4" % arc_number)
-        print ("svalue_ratio: %.2f <= 0.3 " % svalue_ratio)
+#        print ("svalue_ratio: %.2f <= 0.3 " % svalue_ratio)
         print ("-- end scratch --")
 
         if size<17 \
            or angle_sum_criteria < 3.8 \
-           or arc_number < 4 \
-           or svalue_ratio > 0.3:
+           or arc_number < 4 :
+#           or svalue_ratio > 0.3 
             return (False, inflection_points)
         
         print ("** scratch detected **")
+        # TODO: return a dictionary instead of inflection_points.
         return (True, inflection_points)
+
     
+    def scratch_get_todelete(self, scratch, descriptors):
+        """Given a scratch stroke, return the object(s) to be deleted.
+        scratch: return value of scratch_detector()
+        descriptors: StrokeDescriptors for the scratch stroke
+        
+        Criteria for deletion of a ray or a lens:
+        - the number of intersections between scratch and polyline must
+        greater than 2 and the number of scratch inflection points minus 1.
+
+        """
+        todelete = []
+        
+        # If no baseline exists, no other object can exist
+        if self._baseline is None: return(todelete)
+
+        for obj in self._rays + self._lenses + [self._baseline]:
+            # Compute curvilinear coordinate of intersection points
+            # between scratch and object polyline.
+            object_descriptors = StrokeDescriptors(obj.polyline)
+            intersections = LineIntersection(descriptors, object_descriptors)
+            coordinates = np.asarray([l[3] for l in intersections.parts1[:-1]])
+#            points = descriptors.resample(lengths=coordinates)
+
+            if len(coordinates) >= len(scratch[1])-1 \
+                   and len(coordinates) > 2:
+                todelete.append(obj)
+
+        return (todelete)
+
         
     def baseline_detector(self, descriptors, span=270):
         """Detect if a stroke can be a base line.
