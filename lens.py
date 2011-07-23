@@ -71,10 +71,10 @@ class LensItem(QtGui.QGraphicsPathItem):
     def mouseMoveEvent(self, event):
         if self.__moving :
             current = event.scenePos() - self.__startPos
-            self.setPos(current.x(), self.ylocation)
+            self.backend.set_lens_pos(self, current.x(), self.ylocation)
+#            print("mouse press (lens): ", current.x(), current.y())
 
-
-    def setPos(self, x, y):
-        newx, newy = x, y
-        newx, newy=self.backend.set_lens_pos(self, x, y)
-        super(LensItem, self).setPos(QPointF(newx,newy))
+    def update(self, xpos, ypos):
+        self.xlocation = xpos
+        self.ylocation = ypos
+        self.setPos(xpos, ypos)
