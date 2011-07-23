@@ -22,6 +22,7 @@ class RayHandleItem(QtGui.QGraphicsPathItem):
 
         self.pen = pen
         self.brush = brush
+        self.basepoint = basepoint
         self.radius = radius
 
         self.setPen(self.pen)
@@ -33,6 +34,7 @@ class RayHandleItem(QtGui.QGraphicsPathItem):
 
         self.setCursor(Qt.Qt.SizeAllCursor)
         self.__moving = False
+        self.__rotating = False
         print (self.parentItem())
 
 
@@ -48,26 +50,37 @@ class RayHandleItem(QtGui.QGraphicsPathItem):
         """Update handle position and orientation."""
         self.path = QtGui.QPainterPath()
 #        self.setPen(self.pen)
+        self.basepoint = basepoint
         self._draw(basepoint, unit)
         self.setPath(self.path)
-        
-        
+
+
     def mousePressEvent(self, event):
-        print ('press')
-        self.__moving = True
+        pos = event.scenePos()
+        dist = (self.basepoint[0] - pos.x()) ** 2 + \
+               (self.basepoint[1] - pos.y()) ** 2
+        if (dist > (self.radius ** 2)):
+            self.__rotating = True
+        else:
+            self.__moving = True
 
 
     def mouseReleaseEvent(self, event):
         self.__moving = False
+        self.__rotating = False
 
 
     def mouseMoveEvent(self, event):
         current = event.scenePos()
         parent = self.parentItem()
-        parent.backend.set_ray_point(parent, current.x(), current.y())
+        if self.__moving:
+            parent.backend.set_ray_point(parent, current.x(), current.y())
+        if self.__rotating:
+            bpt = self.basepoint
+            dir_vec = np.asarray((current.x() - bpt[0], current.y() - bpt[1]))
+            parent.backend.set_ray_direction(parent, dir_vec)
 
-        
-    
+
 class RayItem(QtGui.QGraphicsPathItem):
     def __init__(self, polyline, basepoint, unit,
                  color=default_color, backend=None, *args):
@@ -81,7 +94,6 @@ class RayItem(QtGui.QGraphicsPathItem):
         self.setPath(self.path)
         self.handle = RayHandleItem(basepoint, unit, parent=self)
         self.backend = backend
-        
 
     def _draw_polyline(self, polyline, color=default_color):
         """Draw polyline in current path"""

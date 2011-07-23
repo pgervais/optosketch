@@ -509,18 +509,29 @@ class RecognitionEngine(object):
         
         return (backend.xlocation, y)
 
+    def _find_ray_backend(self, ray_frontend):
+        """Find a ray backend from its given frontend"""
+        backend=None
+        for l in self._rays:
+            if l._frontend_object == ray_frontend:
+                backend = l
+                break
+        if backend is None: raise ValueError("No backend object found.")
+        return backend
 
     def set_ray_point(self, ray, x, y):
         """Change the location of a ray base point.
         "ray": frontend ray object.
         x, y: new location"""
-
-        backend=None
-        for l in self._rays:
-            if l._frontend_object == ray:
-                backend = l
-                break
-        if backend is None: raise ValueError("No backend object found.")
-
+        backend = self._find_ray_backend(ray)
         backend.basepoint = np.asarray((x,y))
+        backend.update()
+
+    def set_ray_direction(self, ray, dir_vec):
+        """Change the ray direction:
+        ray: frontend ray object
+        dir_vec: direction vector, numpy.array of shape (2,)
+        """
+        backend = self._find_ray_backend(ray)
+        backend.unit = self.scale_to(dir_vec)
         backend.update()
