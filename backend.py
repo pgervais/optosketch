@@ -25,6 +25,9 @@ class Lens(object):
         self._frontend_object = frontend.add_lens(xlocation, baseline,
                                                   focal=focal,
                                                   span=span, kind=kind)
+
+    def update(self):
+        self._frontend_object.update(self.xlocation, self.baseline.ylocation)
         
 
 class Ray(object):
@@ -504,10 +507,8 @@ class RecognitionEngine(object):
         if backend is None: raise ValueError("No backend object found.")
 
         backend.xlocation = x
-        y = backend.baseline.ylocation
+        backend.update()
         for ray in self._rays: ray.update()
-        
-        return (backend.xlocation, y)
 
     def _find_ray_backend(self, ray_frontend):
         """Find a ray backend from its given frontend"""
