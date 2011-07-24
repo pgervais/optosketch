@@ -375,6 +375,7 @@ class LineIntersection(Intersection):
 
         # Reorder line beginning and end
         # First and last points are properly ordered
+        logging.log(10, "self.parts1: "+str(self.parts1))
         for k in range(1,len(self.parts1)-1):
             c = self.parts1[k]
             if c[1] > c[3]:

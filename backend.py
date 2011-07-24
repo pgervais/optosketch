@@ -26,6 +26,7 @@ class Lens(object):
         self.xlocation = xlocation
         self.focal = focal
         self.baseline = baseline
+        self.span = span
         self.polyline = np.asarray([[xlocation, baseline.ylocation-span],
                                     [xlocation, baseline.ylocation+span]])
         self._frontend_object = frontend.add_lens(xlocation, baseline,
@@ -33,6 +34,8 @@ class Lens(object):
                                                   span=span, kind=kind)
 
     def update(self):
+        self.polyline = np.asarray([[self.xlocation, self.baseline.ylocation-self.span],
+                                    [self.xlocation, self.baseline.ylocation+self.span]])
         self._frontend_object.update(self.xlocation, self.baseline.ylocation)
         
 
@@ -559,6 +562,7 @@ class RecognitionEngine(object):
         backend.xlocation = x
         backend.update()
         for ray in self._rays: ray.update()
+
 
     def _find_ray_backend(self, ray_frontend):
         """Find a ray backend from its given frontend"""
