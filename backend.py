@@ -193,9 +193,11 @@ class RecognitionEngine(object):
             default_focal_length = 50.
             logging.info("Adding a lens")
             xlocation = (stroke[0,0] + stroke[-1, 0])/2.
-            self._lenses.append(Lens(self.frontend, xlocation,
+            span = abs(stroke[0,1] - stroke[-1,1])/2.
+            self._lenses.append(Lens(self.frontend, xlocation, 
                                      self._baseline._frontend_object,
-                                     focal=default_focal_length))
+                                     focal=default_focal_length,
+                                     span=span))
             # Update ray objects.
             for ray in self._rays: ray.update()
             return
