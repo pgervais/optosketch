@@ -34,5 +34,8 @@ if __name__ == "__main__":
   logging.debug('Debug logging activated')
 
   a = Application(sys.argv)
-  sys.exit(a.exec_())
+  ret = a.exec_()
+  # Save every stroke before quitting
+  a.window.ui.canvasview.scene().save_strokes(auto=True)
+  sys.exit(ret)
 

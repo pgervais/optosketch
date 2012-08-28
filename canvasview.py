@@ -110,6 +110,28 @@ class CanvasScene(QtGui.QGraphicsScene):
     self.engine.set_frontend(self.frontend)
     
 
+  def save_strokes(self, auto=False):
+    """Save all strokes drawn. Useful for debugging/learning purposes"""
+    if auto:
+      basepath = osp.join("strokes_auto","stroke_%s" % time.strftime("%Y%m%d%H%M%S"))
+    else:
+      basepath = osp.join("strokes","stroke_%s" % time.strftime("%Y%m%d%H%M%S"))
+
+    if len(self.strokeitem) == 0:
+      print ('No stroke to save')
+      return
+
+    print("Saving every strokes in directory: %s" % basepath)
+
+    try:
+      os.makedirs(basepath)
+    except OSError:
+      print "Directory %s already exists. Nothing saved."
+      return
+
+    for n, stroke in enumerate(self.strokeitem):
+      stroke.save(osp.join(basepath, "stroke_%.2d.dat" % n))
+
   def keyPressEvent(self, event):
     key = event.key()
     logging.debug("event.key(): "+str(key))
@@ -120,22 +142,7 @@ class CanvasScene(QtGui.QGraphicsScene):
       print (self.strokeitem[-1].tonumpy())
       
     elif key == Qt.Qt.Key_S: # save
-      basepath = osp.join("strokes","stroke_%s" % time.strftime("%Y%m%d%H%M%S"))
-
-      if len(self.strokeitem) == 0:
-        print ('No stroke to save')
-        return
-      
-      print("Saving every strokes in directory: %s" % basepath)
-
-      try:
-        os.makedirs(basepath)
-      except OSError:
-        print "Directory %s already exists. Nothing saved."
-        return
-      
-      for n, stroke in enumerate(self.strokeitem):
-        stroke.save(osp.join(basepath, "stroke_%.2d.dat" % n))
+      self.save_strokes()
       
     elif key == Qt.Qt.Key_E:
       print "Existing objects: "+self.engine.content()
