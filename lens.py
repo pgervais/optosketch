@@ -37,50 +37,57 @@ class FocalPointItem(PointItem):
             self.parentItem().set_focal_length(-focal)
 
 
+class ArrowHead(QtGui.QGraphicsPathItem):
+    """Shape of an arrow-head."""
+    def __init__(self, span=10., height=6., pen=None, angle=0, **kwargs):
+        """height and span are longitudinal and transverse dimensions, resp.
+        Head is center on (0,0), oriented towards the right (zero angle)"""
+
+        super(ArrowHead, self).__init__(**kwargs)
+        self._span = span
+        self._height = height
+        self.setRotation(angle)
+        head = QtGui.QPolygonF([QPointF(-height, span/2.),
+                                QPointF(0., 0.),
+                                QPointF(-height, -span/2.)
+                                ])
+
+        self.path = QtGui.QPainterPath()
+        if pen is not None: self.setPen(pen)
+        self.path.addPolygon(head)
+        self.setPath(self.path)
+
+
 class LensItem(QtGui.QGraphicsPathItem):
     def __init__(self, xlocation=0., ylocation=0., span=50.,
-                 color=QtGui.QColor('gray'), kind=None,
+                 pen = QtGui.QPen(QtGui.QColor('black')), kind=None,
                  focal = 50., backend=None, *args):
 
         super(LensItem, self).__init__(*args)
+        self.setPos(QPointF(xlocation, ylocation))
 
         self.xlocation = xlocation
         self.ylocation = ylocation
         self.backend = backend
         self._focal = focal
+        self._span = span
         self.__moving = False
-        super(LensItem, self).setPos(QPointF(xlocation, ylocation))
 
         # Item shape
-        self.path = QtGui.QPainterPath()
-        
-        self.path.moveTo(QPointF(0., -span))
-        pen = QtGui.QPen(color)
-        pen.setWidth(2)
         self.setPen(pen)
+
+        self.path = QtGui.QPainterPath()        
+        self.path.moveTo(QPointF(0., -span))
         self.path.lineTo(QPointF(0., +span))
 
-        # Draw arrows
-        # TODO: compute "head" in a helper function
-        dx = 5
-        if self._focal > 0:
-            dy = 6
-        else:
-            dy = -6
-            
-        head = QtGui.QPolygonF([QPointF(-dx, -dy+span),
-                        QPointF(0., +span ),
-                        QPointF(dx, -dy+span)])
-        self.path.addPolygon(head)
-
-        head = QtGui.QPolygonF([QPointF(-dx, dy -span),
-                        QPointF(0., -span),
-                        QPointF(dx, dy-span)])
-        self.path.addPolygon(head)
-
+        # Draw arrow heads
+        self.heads = (ArrowHead(parent=self, angle=90., pen=pen),
+                      ArrowHead(parent=self, angle=-90., pen=pen))
+        self.setup_heads()
+        
         # Draw focal points as sub-objects
-        self.focii = FocalPointItem(label='f', parent=self, principal=True), \
-                     FocalPointItem(label="f'", parent = self, principal=False)
+        self.foci = FocalPointItem(label="F'", parent=self, principal=True), \
+                    FocalPointItem(label="F", parent = self, principal=False)
         
         self.setFlag(self.ItemIsFocusable)
         self.setAcceptHoverEvents(True)
@@ -89,6 +96,16 @@ class LensItem(QtGui.QGraphicsPathItem):
         self.setPath(self.path)
         self.update(self.xlocation, self.ylocation, self._focal)
 
+
+    def setup_heads(self):
+        """Update heads after a change of focal length."""
+        if self._focal > 0:
+            self.heads[0].setPos(QPointF(0., self._span))
+            self.heads[1].setPos(QPointF(0., -self._span))
+        else:
+            self.heads[0].setPos(QPointF(0., -self._span))
+            self.heads[1].setPos(QPointF(0., self._span))
+        
 
     def set_focal_length(self, focal):
         """Change focal length. To be called by FocalPointItem."""
@@ -145,5 +162,6 @@ class LensItem(QtGui.QGraphicsPathItem):
         self._focal = focal
 
         self.setPos(xpos, ypos)
-        self.focii[0].setPos(QPointF( self._focal, 0.))
-        self.focii[1].setPos(QPointF(-self._focal, 0.))
+        self.foci[0].setPos(QPointF( self._focal, 0.))
+        self.foci[1].setPos(QPointF(-self._focal, 0.))
+        self.setup_heads()

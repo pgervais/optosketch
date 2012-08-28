@@ -186,16 +186,12 @@ class RecognitionEngine(object):
                 logging.error("Already a baseline")
 
         if lens:
-            default_focal_length = 50
+            default_focal_length = 50.
             logging.info("Adding a lens")
             xlocation = (stroke[0,0] + stroke[-1, 0])/2.
-            if len(self._lenses) % 2 == 0:
-                sign = 1
-            else:
-                sign = -1
             self._lenses.append(Lens(self.frontend, xlocation,
                                      self._baseline._frontend_object,
-                                     focal=default_focal_length*sign))
+                                     focal=default_focal_length))
             # Update ray objects.
             for ray in self._rays: ray.update()
             return
@@ -550,7 +546,7 @@ class RecognitionEngine(object):
         """Change the focal length of a lens.
         lens: frontend object
         focal: new focal length"""
-        logging.debug('backend: set_lens_focal %d' % focal)
+        # logging.debug('backend: set_lens_focal %d' % focal)
         backend=None
         for l in self._lenses:
             if l._frontend_object == lens:

@@ -51,7 +51,6 @@ class RayHandleItem(QtGui.QGraphicsPathItem):
     def update(self, basepoint, unit):
         """Update handle position and orientation."""
         self.path = QtGui.QPainterPath()
-#        self.setPen(self.pen)
         self.basepoint = basepoint
         self._draw(basepoint, unit)
         self.setPath(self.path)

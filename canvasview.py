@@ -75,8 +75,10 @@ class FrontEndCanvas(FrontEnd):
       kind: "diverging" or "converging" (or "negative"/"positive") or None if the kind
             is still undefined
       """
+      pen = QtGui.QPen(QtGui.QColor('black'))
+      pen.setWidth(3)
       lens = LensItem(xlocation, baseline.ylocation,
-                      backend = self.scene.engine,
+                      backend = self.scene.engine, pen=pen,
                       focal=focal, span=span, kind=kind)
       self.scene.addItem(lens)
       return lens
