@@ -5,6 +5,7 @@ from PyQt4.QtCore import QPointF
 
 import logging
 import numpy as np
+import math
 
 default_color = QtGui.QColor('orange')
 default_ray_pen = QtGui.QPen(QtGui.QColor('black'))
@@ -80,7 +81,23 @@ class RayHandleItem(QtGui.QGraphicsPathItem):
         if self.__rotating:
             bpt = self.basepoint
             dir_vec = np.asarray((current.x() - bpt[0], current.y() - bpt[1]))
+            # quantize angle if not too far from handle
+            norm2 = (dir_vec**2).sum()
+            if norm2 < 4000:
+                dir_vec = quantize(dir_vec, np.pi/16)
+            elif norm2 < 20000:
+                dir_vec = quantize(dir_vec, np.pi/32)
             parent.backend.set_ray_direction(parent, dir_vec)
+
+
+def quantize(vec, step):
+    """Return a vector with same length but quantized angle, with given step
+    (in radians)"""
+    angle = math.atan2(vec[1], vec[0])
+    quantized_angle = round(angle/step)*(1.0*step)
+    
+    norm = np.sqrt((vec**2).sum())
+    return np.asarray([np.cos(quantized_angle), np.sin(quantized_angle)])*norm
 
 
 class RayItem(QtGui.QGraphicsPathItem):
