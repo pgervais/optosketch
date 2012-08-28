@@ -17,9 +17,10 @@ class PointItem(QtGui.QGraphicsPathItem, GenericPoint):
         self.path.addEllipse(pos, radius, radius)
         self.setPen(QtGui.QPen(color))
         self.setPath(self.path)
-
-        self.x = pos.x()
-        self.y = pos.y()
+        self.radius = radius
+        self.__x = pos.x()
+        self.__y = pos.y()
         ## FIXME: devise a better placement algorithm.
         if not label is None:
-            QtGui.QGraphicsSimpleTextItem(label, parent=self).moveBy(self.x, self.y+2)
+            QtGui.QGraphicsSimpleTextItem(label, parent=self
+                                          ).moveBy(self.__x,self.__y+self.radius)

@@ -36,7 +36,8 @@ class Lens(object):
     def update(self):
         self.polyline = np.asarray([[self.xlocation, self.baseline.ylocation-self.span],
                                     [self.xlocation, self.baseline.ylocation+self.span]])
-        self._frontend_object.update(self.xlocation, self.baseline.ylocation)
+        self._frontend_object.update(self.xlocation, self.baseline.ylocation,
+                                     self.focal)
         
 
 class Ray(object):
@@ -544,6 +545,22 @@ class RecognitionEngine(object):
         else:
             return False
 
+
+    def set_lens_focal(self, lens, focal):
+        """Change the focal length of a lens.
+        lens: frontend object
+        focal: new focal length"""
+        logging.debug('backend: set_lens_focal %d' % focal)
+        backend=None
+        for l in self._lenses:
+            if l._frontend_object == lens:
+                backend = l
+                break
+        if backend is None: raise ValueError("No backend object found.")
+        backend.focal = focal
+        backend.update()
+        for ray in self._rays: ray.update()
+        
         
     def set_lens_pos(self, lens, x, y):
         """Move a lens to a new location.
