@@ -153,6 +153,8 @@ class RecognitionEngine(object):
         s = stroke[d>threshold]
         logging.debug("simplification threshold: "+str(threshold))
         logging.debug("number of points after simplification: "+ str(len(s)))
+        ## logging.debug("adding simplified line")
+        ## self.frontend.add_line(s, kind="generic")
 
         simplified_descriptors = StrokeDescriptors(s)
         scratch = self.scratch_detector(simplified_descriptors)
@@ -166,8 +168,8 @@ class RecognitionEngine(object):
 
         logging.info("--- Corners detection ---")
         resamp = descriptors.resample()
-        corners1 = descriptors.corners1()
-
+        corners1 = descriptors.corners1(w=10)
+        print corners1
         # Make recognition decision and call frontend here.
         if scratch[0]:
             logging.info("Processing scratch")
@@ -175,10 +177,10 @@ class RecognitionEngine(object):
             self.remove_object(todelete)
             return
                 
-        if point[0]:
-            logging.info("Adding point")
-            self.frontend.add_point(point[1], point[2])
-            return 
+        ## if point[0]:
+        ##     logging.info("Adding point")
+        ##     self.frontend.add_point(point[1], point[2])
+        ##     return 
 
         if baseline:
             if self._baseline is None:
@@ -207,10 +209,10 @@ class RecognitionEngine(object):
             self._rays.append(Ray(self.frontend, self, *ray[1:]))
             return
             
-        if line[0]:
-            logging.info("Adding generic line")
-            self.frontend.add_line(stroke[(0,-1),:], kind="generic")
-            return
+        ## if line[0]:
+        ##     logging.info("Adding generic line")
+        ##     self.frontend.add_line(stroke[(0,-1),:], kind="generic")
+        ##     return
 
         # Display simplified line
 ##         logging.info("fallback: adding simplified line")
