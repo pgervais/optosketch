@@ -12,7 +12,6 @@ class FocalPointItem(PointItem):
         self.principal = kwargs["principal"]
         del kwargs['principal']
         super(FocalPointItem, self).__init__(*args, **kwargs)
-        self.setAcceptHoverEvents(True)
         self.setCursor(Qt.Qt.SizeHorCursor)
         self.__moving = False
 
@@ -22,7 +21,6 @@ class FocalPointItem(PointItem):
         # Use scene coordinates because element is moved by the backend while
         # dragging the mouse.
         self.__startPosX = self.scenePos().x() - self.x()
-        print (self.__startPosX)
         
     def mouseReleaseEvent(self, event):
         logging.debug('FocalPointItem: mouse release')
@@ -37,13 +35,13 @@ class FocalPointItem(PointItem):
             self.parentItem().set_focal_length(-focal)
 
 
-class ArrowHead(QtGui.QGraphicsPathItem):
+class ArrowHeadItem(QtGui.QGraphicsPathItem):
     """Shape of an arrow-head."""
     def __init__(self, span=10., height=6., pen=None, angle=0, **kwargs):
         """height and span are longitudinal and transverse dimensions, resp.
         Head is center on (0,0), oriented towards the right (zero angle)"""
 
-        super(ArrowHead, self).__init__(**kwargs)
+        super(ArrowHeadItem, self).__init__(**kwargs)
         self._span = span
         self._height = height
         self.setRotation(angle)
@@ -56,6 +54,25 @@ class ArrowHead(QtGui.QGraphicsPathItem):
         if pen is not None: self.setPen(pen)
         self.path.addPolygon(head)
         self.setPath(self.path)
+        self.setCursor(Qt.Qt.SizeVerCursor)
+
+
+    def mousePressEvent(self, event):
+        logging.debug('ArrowHeadItem: mouse press %d' % self.x())
+        self.__moving = True
+        # Use scene coordinates because element is moved by the backend while
+        # dragging the mouse.
+        self.__startPosY = self.scenePos().y() - self.y()
+        
+    def mouseReleaseEvent(self, event):
+        logging.debug('ArrowHeadItem: mouse release')
+        self.__moving = False
+        
+    def mouseMoveEvent(self, event):
+        # logging.debug('ArrowHeadItem: mouse move %d' % self.y())
+        span = abs(event.scenePos().y() - self.__startPosY)
+        if self.__moving:
+            self.parentItem().set_span(span)
 
 
 class LensItem(QtGui.QGraphicsPathItem):
@@ -73,16 +90,11 @@ class LensItem(QtGui.QGraphicsPathItem):
         self._span = span
         self.__moving = False
 
-        # Item shape
         self.setPen(pen)
-
-        self.path = QtGui.QPainterPath()        
-        self.path.moveTo(QPointF(0., -span))
-        self.path.lineTo(QPointF(0., +span))
-
+        
         # Draw arrow heads
-        self.heads = (ArrowHead(parent=self, angle=90., pen=pen),
-                      ArrowHead(parent=self, angle=-90., pen=pen))
+        self.heads = (ArrowHeadItem(parent=self, angle=90., pen=pen),
+                      ArrowHeadItem(parent=self, angle=-90., pen=pen))
         self.setup_heads()
         
         # Draw focal points as sub-objects
@@ -92,9 +104,7 @@ class LensItem(QtGui.QGraphicsPathItem):
         self.setFlag(self.ItemIsFocusable)
         self.setAcceptHoverEvents(True)
         self.setCursor(Qt.Qt.SizeHorCursor)
-
-        self.setPath(self.path)
-        self.update(self.xlocation, self.ylocation, self._focal)
+        self.update(self.xlocation, self.ylocation, self._focal, self._span)
 
 
     def setup_heads(self):
@@ -111,6 +121,9 @@ class LensItem(QtGui.QGraphicsPathItem):
         """Change focal length. To be called by FocalPointItem."""
         self.backend.set_lens_focal(self, focal)
 
+    def set_span(self, span):
+        """Change lens span. To be called by ArrowHeadItem"""
+        self.backend.set_lens_span(self, span)
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -155,7 +168,7 @@ class LensItem(QtGui.QGraphicsPathItem):
             self.backend.set_lens_pos(self, current.x(), self.ylocation)
 #            print("mouse move (lens): ", current.x(), current.y())
 
-    def update(self, xpos, ypos, focal):
+    def update(self, xpos, ypos, focal, span=None):
         ## logging.debug('updating lens: %d, %d, %d' % (xpos, ypos, focal))
         self.xlocation = xpos
         self.ylocation = ypos
@@ -165,3 +178,11 @@ class LensItem(QtGui.QGraphicsPathItem):
         self.foci[0].setPos(QPointF( self._focal, 0.))
         self.foci[1].setPos(QPointF(-self._focal, 0.))
         self.setup_heads()
+
+        # Item shape
+        if span is not None:
+            self._span = span
+            self.path = QtGui.QPainterPath()        
+            self.path.moveTo(QPointF(0., -span))
+            self.path.lineTo(QPointF(0., +span))
+            self.setPath(self.path)

@@ -33,11 +33,15 @@ class Lens(object):
                                                   focal=focal,
                                                   span=span, kind=kind)
 
-    def update(self):
+    def update(self, with_span = False):
         self.polyline = np.asarray([[self.xlocation, self.baseline.ylocation-self.span],
                                     [self.xlocation, self.baseline.ylocation+self.span]])
-        self._frontend_object.update(self.xlocation, self.baseline.ylocation,
-                                     self.focal)
+        if with_span:
+            self._frontend_object.update(self.xlocation, self.baseline.ylocation,
+                                         self.focal, self.span)
+        else:
+            self._frontend_object.update(self.xlocation, self.baseline.ylocation,
+                                         self.focal)
         
 
 class Ray(object):
@@ -547,16 +551,19 @@ class RecognitionEngine(object):
         lens: frontend object
         focal: new focal length"""
         # logging.debug('backend: set_lens_focal %d' % focal)
-        backend=None
-        for l in self._lenses:
-            if l._frontend_object == lens:
-                backend = l
-                break
-        if backend is None: raise ValueError("No backend object found.")
+        backend = self._find_lens_backend(lens)
         backend.focal = focal
         backend.update()
         for ray in self._rays: ray.update()
+
         
+    def set_lens_span(self, lens, span):
+        """Change the lens span (transverse half-size)"""
+        backend = self._find_lens_backend(lens)
+        backend.span = span
+        backend.update(with_span = True)
+        for ray in self._rays: ray.update()
+
         
     def set_lens_pos(self, lens, x, y):
         """Move a lens to a new location.
@@ -565,27 +572,10 @@ class RecognitionEngine(object):
 
         # Find backend object
         # FIXME: very unefficient. use a dict instead.
-        backend=None
-        for l in self._lenses:
-            if l._frontend_object == lens:
-                backend = l
-                break
-        if backend is None: raise ValueError("No backend object found.")
-
+        backend = self._find_lens_backend(lens)
         backend.xlocation = x
         backend.update()
         for ray in self._rays: ray.update()
-
-
-    def _find_ray_backend(self, ray_frontend):
-        """Find a ray backend from its given frontend"""
-        backend=None
-        for l in self._rays:
-            if l._frontend_object == ray_frontend:
-                backend = l
-                break
-        if backend is None: raise ValueError("No backend object found.")
-        return backend
 
     def set_ray_point(self, ray, x, y):
         """Change the location of a ray base point.
@@ -603,3 +593,24 @@ class RecognitionEngine(object):
         backend = self._find_ray_backend(ray)
         backend.unit = self.scale_to(dir_vec)
         backend.update()
+
+
+    def _find_ray_backend(self, ray_frontend):
+        """Find a ray backend object given its frontend"""
+        backend=None
+        for l in self._rays:
+            if l._frontend_object == ray_frontend:
+                backend = l
+                break
+        if backend is None: raise ValueError("No backend object found.")
+        return backend
+
+    def _find_lens_backend(self, ray_frontend):
+        """Find a lens backend object given its frontend"""
+        backend=None
+        for l in self._lenses:
+            if l._frontend_object == ray_frontend:
+                backend = l
+                break
+        if backend is None: raise ValueError("No backend object found.")
+        return backend
