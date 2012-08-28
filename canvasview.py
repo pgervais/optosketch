@@ -1,6 +1,6 @@
 # This file is part of Optosketch. It is released under the GPL v2 licence.
 
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore, Qt
 import time
 import logging
 
@@ -11,6 +11,8 @@ from lens import LensItem
 from ray import RayItem
 from frontend import FrontEnd
 
+import os
+import os.path as osp
 
 class FrontEndCanvas(FrontEnd):
   """Used for communication with backend. Must implement
@@ -113,19 +115,38 @@ class CanvasScene(QtGui.QGraphicsScene):
     logging.debug("event.key(): "+str(key))
 
     # Display last stroke coordinates as a numpy array.
-    if key == 80: # p (print)
+    if key == Qt.Qt.Key_P: # print
       print ("last stroke:")
       print (self.strokeitem[-1].tonumpy())
       
-    elif key == 83: # s (save) for debugging.
-      dt = time.strftime("%Y%m%d%H%M%S")
-      print("Saving every strokes. Time: %s" % dt)
-      for n, stroke in enumerate(self.strokeitem):
-        filename = "strokes/stroke_%s_%.2d.dat" % (dt, n)
-        stroke.save(filename)
+    elif key == Qt.Qt.Key_S: # save
+      basepath = osp.join("strokes","stroke_%s" % time.strftime("%Y%m%d%H%M%S"))
+
+      if len(self.strokeitem) == 0:
+        print ('No stroke to save')
+        return
       
-    elif key == 69: # e
+      print("Saving every strokes in directory: %s" % basepath)
+
+      try:
+        os.makedirs(basepath)
+      except OSError:
+        print "Directory %s already exists. Nothing saved."
+        return
+      
+      for n, stroke in enumerate(self.strokeitem):
+        stroke.save(osp.join(basepath, "stroke_%.2d.dat" % n))
+      
+    elif key == Qt.Qt.Key_E:
       print "Existing objects: "+self.engine.content()
+
+    elif key == Qt.Qt.Key_Question:
+      print """Key bindings:
+      ?: display this help
+      p: print last stroke on stdout
+      s: save every stroke to a subdirectory of stroke/
+      e: print every existing objects to stdout
+      """
     else:
       super(CanvasScene, self).keyPressEvent(event)      
 
