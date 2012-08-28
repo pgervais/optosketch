@@ -19,6 +19,8 @@ class FocalPointItem(PointItem):
     def mousePressEvent(self, event):
         logging.debug('FocalPointItem: mouse press %d' % self.x())
         self.__moving = True
+        # Use scene coordinates because element is moved by the backend while
+        # dragging the mouse.
         self.__startPosX = self.scenePos().x() - self.x()
         print (self.__startPosX)
         
@@ -27,7 +29,7 @@ class FocalPointItem(PointItem):
         self.__moving = False
         
     def mouseMoveEvent(self, event):
-        logging.debug('FocalPointItem: mouse move %d' % self.x())
+        # logging.debug('FocalPointItem: mouse move %d' % self.x())
         focal = event.scenePos().x() - self.__startPosX
         if self.__moving and self.principal:
             self.parentItem().set_focal_length(focal)
@@ -137,7 +139,7 @@ class LensItem(QtGui.QGraphicsPathItem):
 #            print("mouse move (lens): ", current.x(), current.y())
 
     def update(self, xpos, ypos, focal):
-        logging.debug('updating lens: %d, %d, %d' % (xpos, ypos, focal))
+        ## logging.debug('updating lens: %d, %d, %d' % (xpos, ypos, focal))
         self.xlocation = xpos
         self.ylocation = ypos
         self._focal = focal
