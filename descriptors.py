@@ -351,3 +351,46 @@ class StrokeDescriptors(object):
                        & np.r_[straws[:-1] < straws[1:], True]
                        & (straws < threshold))[0]
         return np.r_[resampled[:1,:], resampled[ind+w-1,:], resampled[-1:,:]]
+
+
+    def distance_to_point(self, point, sl=slice(None)):
+        """Compute distance between line and point.
+        Computed is minimum distance between the point and every vertex of stroke.
+        point must be a 1x2 numpy array.
+        sl is a slice object. It can be used to restrict the part of the line on
+        which compute the distance.
+        """
+
+        extract = self._a[sl,:]
+        if len(extract) == 1:
+            return (0, ((extract-point)**2).sum())
+
+        # Compute distance to every vertex in stroke
+        dist2 = ((extract - point) ** 2).sum(1)
+        k = np.argmin(dist2)
+        return (k, dist2[k])
+
+
+    def closed_detector(self):
+        """Closed line detector."""
+        # Compute distance between an endpoint and the 20% percent the other end.
+        npoint = self._a.shape[0] # point number
+
+        all = self._length
+        fraction = 0.2
+        ind = self._cumlength.searchsorted(np.asarray([all*fraction, all*(1-fraction)]))+1
+#        print ind, len(gea._a)
+#        print "[closed] ratios: (%.2f, %.2f)" % (gea._cumlength[ind[0]-1]/gea._length,
+#                                        gea._cumlength[ind[1]-1]/gea._length)
+
+        k1, d1 = self.distance_to_point(self._a[0,:], slice(ind[1], None))
+        k2, d2 = self.distance_to_point(self._a[-1,:], sl=slice(0,ind[0])) 
+        r1, r2 = d1/self._span.min(), d2/self._span.min()
+#        print '[closed] Distances: %.3f, %.3f' % (r1, r2)
+
+        closed = False
+        if min(r1, r2) < 8.:
+            logging.debug('**Closed loop detected**')
+            closed = True
+
+        return closed, k1+ind[1], k2
