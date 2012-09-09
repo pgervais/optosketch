@@ -14,6 +14,9 @@ from frontend import FrontEnd
 import os
 import os.path as osp
 
+from strokefile import StrokeFile
+
+
 class FrontEndCanvas(FrontEnd):
   """Used for communication with backend. Must implement
   methods defined in frontend.FrontEnd."""
@@ -116,21 +119,20 @@ class CanvasScene(QtGui.QGraphicsScene):
       basepath = osp.join("strokes_auto","stroke_%s" % time.strftime("%Y%m%d%H%M%S"))
     else:
       basepath = osp.join("strokes","stroke_%s" % time.strftime("%Y%m%d%H%M%S"))
+      
+    if not StrokeFile.__dict__.has_key('add_stroke'):
+      print 'Stroke save is not activated (missing h5py ?), nothing saved.'
+      return
 
     if len(self.strokeitem) == 0:
       print ('No stroke to save')
       return
 
-    print("Saving every strokes in directory: %s" % basepath)
+    stroke_file = StrokeFile('test/strokes.h5')
+    for stroke in self.strokeitem:
+      stroke_file.add_stroke(stroke.tonumpy(), stroke._time)
+    stroke_file.close()
 
-    try:
-      os.makedirs(basepath)
-    except OSError:
-      print "Directory %s already exists. Nothing saved."
-      return
-
-    for n, stroke in enumerate(self.strokeitem):
-      stroke.save(osp.join(basepath, "stroke_%.2d.dat" % n))
 
   def keyPressEvent(self, event):
     key = event.key()
