@@ -21,9 +21,27 @@ try:
             self.__sessionid = self.f['metadata'].attrs['sessionid'] + 1
             self.__strokes = []
 
+        @property
+        def get_sessionid(self):
+            """Return current session id"""
+            return self.__sessionid
+
+
+        def close_session(self):
+            """Compute a new session id.
+            Flushes the file on disk."""
+            self.flush()
+            self.__sessionid += 1
+
+
+        def __len__(self):
+            return (self.f['metadata'].shape[0])
+
 
         def flush(self):
             # Fill metadata table, add stroke arrays
+            if len(self.__strokes) == 0:
+                return
             stroke_g = self.f['strokes']
             metadata = self.f['metadata']
             initial_count = metadata.shape[0]
@@ -73,6 +91,54 @@ try:
                                    'id': self.__count})
             self.__count += 1
 
+
+        def read_stroke(self, strokeid=None, sessionid=None):
+            """Read stroke either by id or by session (default: last stroke)
+            Return : 2-tuple with metadata, stroke array
+            metadata is a structured array with key start_time, sessionid, strokeid
+            """
+            if sessionid is not None and strokeid is not None:
+                raise ValueError("Both sessionid and strokeid can't be defined")
+
+            if strokeid is None and sessionid is None:
+                strokeid = -1
+
+            metadata = self.f['metadata'][:]
+
+            if strokeid is not None:
+                if strokeid == -1:
+                    strokeid = metadata['strokeid'].max()
+                ind = metadata['strokeid'].searchsorted(strokeid)
+                
+                if ind >= metadata.shape[0] or metadata['strokeid'][ind] != strokeid:
+                    raise ValueError("Invalid stroke id")
+                
+                return (metadata[ind], self.f['strokes/s_%.6d' % strokeid])
+            
+            else: # session is not None
+                ind = np.where(metadata['sessionid'][:] == sessionid)[0]
+
+                ret = []
+                for n in ind:
+                    ret.append((metadata[n], self.f['strokes/s_%.6d' %
+                                                    metadata[n]['strokeid']]))
+                return ret
+
+
+        def stroke_iter(self):
+            """Iterator over every stroke."""
+            for n in self.f['metadata']['strokeid']:
+                yield self.read_stroke(n)
+
+
+        def session_iter(self):
+            """Iterate over each session."""
+            sessionids = list(set(self.f['metadata']['sessionid']))
+            sessionids.sort()
+            for n in sessionids:
+                yield self.read_stroke(sessionid=n)
+
+
 except ImportError:
     class StrokeFile(object):
         """Mockup class in case h5py is not available."""
@@ -80,18 +146,95 @@ except ImportError:
 
     
 if __name__ == "__main__":
+    # Tests for StrokeFile
+
     import time
     import random
-#    sf = StrokeFile("h5py_optosketch.h5", overwrite = True)
-    sf = StrokeFile("h5py_optosketch.h5")
-    for n in xrange(10):
-        sf.add_stroke(np.random.randn(random.randint(10, 100)), time.time())
+    import unittest
+    import os
 
-    sf.flush()
-#    raw_input()
+    class TestWrite(unittest.TestCase):
+        def setUp(self):
+            self.filename = "strokefile_testwrite.h5"
+            try:
+                os.remove(self.filename)
+            except OSError: pass
 
-    for n in xrange(10):
-        sf.add_stroke(np.random.randn(random.randint(10, 100)), time.time())
-    
-    sf.close()
 
+        def fill_file(self, sf, count=10):
+            """Add a given number of random strokes to the StrokeFile object.
+            Does not flush file, return strokes added as a list.
+            """
+            strokes = []
+            for n in xrange(count):
+                strokes.append((np.random.randn(random.randint(10, 100)), time.time()))
+                sf.add_stroke(*strokes[-1])
+
+            return strokes
+        
+
+        def test_session_iter(self):
+            sf = StrokeFile("h5py_optosketch.h5", overwrite = True)
+            strokes = []
+            count = [5, 12, 37]
+            for c in count:
+                strokes.append(self.fill_file(sf, c))
+                sf.close_session()
+            sf.close()
+
+            sf = StrokeFile("h5py_optosketch.h5")
+            count.append(15)
+            strokes.append(self.fill_file(sf, count[-1]))
+            sf.close()
+
+            sf = StrokeFile("h5py_optosketch.h5")
+            for c, st, sess in zip(count, strokes, sf.session_iter()):
+                self.assertEqual(c, len(st))
+                self.assertEqual(c, len(sess))
+                self.assertEqual(len(set([s[0]['sessionid'] for s in sess])), 1)
+                for s1, s2 in zip(st, sess):
+                    np.testing.assert_almost_equal(s1[0], s2[1])
+                
+            sf.close()            
+
+            
+        def _test_add_stroke(self):
+            # Create an empty file
+            stroke_number = 10
+            sf = StrokeFile("h5py_optosketch.h5", overwrite = True)
+            self.assertEqual(len(sf), 0)
+
+            # Add some strokes
+            strokes = self.fill_file(sf, stroke_number)
+            self.assertEqual(len(sf), 0)
+            sf.flush()
+            self.assertEqual(len(sf), stroke_number)
+            
+            # Check len, and stroke content
+            sessionid = None
+            for n, s in enumerate(sf.stroke_iter()):
+                self.assertEqual(strokes[n][1], s[0]["start_time"])
+                if sessionid is None:
+                    sessionid = s[0]["sessionid"]
+                else:
+                    self.assertEqual(sessionid, s[0]["sessionid"])
+                np.testing.assert_almost_equal(strokes[n][0], s[1])
+                
+            # Add some more strokes
+            strokes += self.fill_file(sf, stroke_number)            
+            sf.flush()
+            
+            # Check len, and stroke content
+            self.assertEqual(len(sf), 2*stroke_number)
+
+            for n, s in enumerate(sf.stroke_iter()):
+                self.assertEqual(strokes[n][1], s[0]["start_time"])
+                self.assertEqual(sessionid, s[0]["sessionid"])
+                np.testing.assert_almost_equal(strokes[n][0], s[1])
+                
+            # Check that strokeid are all different
+            self.assertEqual(len(set(sf.f['metadata']['strokeid'])), 2*stroke_number)
+
+            sf.close()
+
+    unittest.main()
